@@ -69,39 +69,53 @@ impl MoneyWithVAT {
         })
     }
 
-    #[getter]
-    fn net(&self) -> Money {
+    #[getter(net)]
+    fn get_net(&self) -> Money {
         self.net.clone()
     }
 
-    #[getter]
-    fn tax(&self) -> Money {
+    #[getter(tax)]
+    fn get_tax(&self) -> Money {
         self.tax.clone()
     }
 
-    #[getter]
-    fn gross(&self) -> Money {
+    #[getter(gross)]
+    fn get_gross(&self) -> Money {
         Money {
             amount: self.net.amount + self.tax.amount,
         }
     }
 
     #[getter]
+    fn tax_rate(&self) -> Decimal {
+        if self.net.amount == Decimal::new(0, 0) {
+            Decimal::new(0, 0)
+        } else {
+            self.tax.amount / self.net.amount
+        }
+    }
+
+    #[getter]
+    fn tax_rate_for_display(&self) -> Decimal {
+        self.tax_rate()
+    }
+
+    #[getter]
     fn is_positive(&self) -> bool {
-        self.gross().amount > Decimal::new(0, 0)
+        self.get_gross().amount > Decimal::new(0, 0)
     }
 
     #[getter]
     fn is_negative(&self) -> bool {
-        self.gross().amount < Decimal::new(0, 0)
+        self.get_gross().amount < Decimal::new(0, 0)
     }
 
     fn is_equal_up_to_cents(&self, other: Self) -> bool {
-        self.gross().round(2).amount == other.gross().round(2).amount
+        self.get_gross().round(2).amount == other.get_gross().round(2).amount
     }
 
     fn is_lower_up_to_cents(&self, other: Self) -> bool {
-        self.gross().round(2).amount < other.gross().round(2).amount
+        self.get_gross().round(2).amount < other.get_gross().round(2).amount
     }
 
     fn is_lower_or_equal_up_to_cents(&self, other: Self) -> bool {
@@ -115,7 +129,7 @@ impl MoneyWithVAT {
                 amount: rounded_net,
             },
             tax: Money {
-                amount: self.gross().round(2).amount - rounded_net,
+                amount: self.get_gross().round(2).amount - rounded_net,
             },
         };
     }
@@ -133,7 +147,7 @@ impl MoneyWithVAT {
 
     fn __hash__(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        self.gross().amount.hash(&mut hasher);
+        self.get_gross().amount.hash(&mut hasher);
         hasher.finish()
     }
 
@@ -159,25 +173,54 @@ impl MoneyWithVAT {
         }
     }
 
-    fn __mul__(&self, other: f64) -> Self {
-        Self {
-            net: Money {
-                amount: self.net.amount * Decimal::from_f64(other).unwrap(),
-            },
-            tax: Money {
-                amount: self.tax.amount * Decimal::from_f64(other).unwrap(),
-            },
+    fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        if let Ok(i) = other.extract::<i32>() {
+            let other_value = Decimal::from_i32(i).unwrap();
+            Ok(Self {
+                net: Money {
+                    amount: self.net.amount * other_value,
+                },
+                tax: Money {
+                    amount: self.tax.amount * other_value,
+                },
+            })
+        } else if let Ok(i) = other.extract::<f64>() {
+            let other_value = Decimal::from_f64(i).unwrap();
+            Ok(Self {
+                net: Money {
+                    amount: self.net.amount * other_value,
+                },
+                tax: Money {
+                    amount: self.tax.amount * other_value,
+                },
+            })
+        } else {
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "Unsupported operand",
+            ))
         }
     }
 
-    fn __truediv__(&self, other: f64) -> Self {
-        Self {
-            net: Money {
-                amount: self.net.amount / Decimal::from_f64(other).unwrap(),
-            },
-            tax: Money {
-                amount: self.tax.amount / Decimal::from_f64(other).unwrap(),
-            },
+    fn __rmul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        self.__mul__(other)
+    }
+
+    fn __truediv__(&self, other: f64) -> PyResult<Self> {
+        let other_value = Decimal::from_f64(other).unwrap();
+
+        if other_value == Decimal::new(0, 0) {
+            Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                "Division by zero",
+            ))
+        } else {
+            Ok(Self {
+                net: Money {
+                    amount: self.net.amount / other_value,
+                },
+                tax: Money {
+                    amount: self.tax.amount / other_value,
+                },
+            })
         }
     }
 
@@ -208,37 +251,117 @@ impl MoneyWithVAT {
     }
 
     fn __eq__(&self, other: &Self) -> bool {
-        self.gross().amount == other.gross().amount
+        self.get_gross().amount == other.get_gross().amount
     }
 
     fn __ne__(&self, other: &Self) -> bool {
-        self.gross().amount != other.gross().amount
+        self.get_gross().amount != other.get_gross().amount
     }
 
     fn __lt__(&self, other: &Self) -> bool {
-        self.gross().amount < other.gross().amount
+        self.get_gross().amount < other.get_gross().amount
     }
 
     fn __le__(&self, other: &Self) -> bool {
-        self.gross().amount <= other.gross().amount
+        self.get_gross().amount <= other.get_gross().amount
     }
 
     fn __gt__(&self, other: &Self) -> bool {
-        self.gross().amount > other.gross().amount
+        self.get_gross().amount > other.get_gross().amount
     }
 
     fn __ge__(&self, other: &Self) -> bool {
-        self.gross().amount >= other.gross().amount
+        self.get_gross().amount >= other.get_gross().amount
     }
 
     #[staticmethod]
-    fn fast_sum(operands: Vec<Self>, _py: Python) -> PyResult<Self> {
+    fn ratio(dividend: &Self, divisor: &Self) -> PyResult<MoneyWithVATRatio> {
+        if divisor.net.amount == Decimal::new(0, 0)
+            || divisor.get_gross().amount == Decimal::new(0, 0)
+        {
+            Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                "Division by zero",
+            ))
+        } else {
+            Ok(MoneyWithVATRatio {
+                net_ratio: dividend.net.amount / divisor.net.amount,
+                gross_ratio: dividend.get_gross().amount / divisor.get_gross().amount,
+            })
+        }
+    }
+
+    #[staticmethod]
+    fn safe_ratio(dividend: Option<&Self>, divisor: Option<&Self>) -> Option<MoneyWithVATRatio> {
+        let fixed_dividend = if let Some(true_dividend) = dividend {
+            true_dividend.rounded_to_cents()
+        } else {
+            MoneyWithVAT {
+                net: Money {
+                    amount: Decimal::new(0, 0),
+                },
+                tax: Money {
+                    amount: Decimal::new(0, 0),
+                },
+            }
+        };
+        let fixed_divisor = if let Some(true_divisor) = divisor {
+            true_divisor.rounded_to_cents()
+        } else {
+            MoneyWithVAT {
+                net: Money {
+                    amount: Decimal::new(0, 0),
+                },
+                tax: Money {
+                    amount: Decimal::new(0, 0),
+                },
+            }
+        };
+
+        if fixed_divisor.net.amount == Decimal::new(0, 0)
+            || fixed_divisor.get_gross().amount == Decimal::new(0, 0)
+        {
+            None
+        } else {
+            Some(MoneyWithVATRatio {
+                net_ratio: fixed_dividend.net.amount / fixed_divisor.net.amount,
+                gross_ratio: fixed_dividend.get_gross().amount / fixed_divisor.get_gross().amount,
+            })
+        }
+    }
+
+    #[staticmethod]
+    fn safe_ratio_decimal(
+        dividend: Option<&Self>,
+        divisor: Option<Decimal>,
+    ) -> Option<MoneyWithVATRatio> {
+        if let Some(true_dividend) = dividend {
+            if let Some(true_divisor) = divisor {
+                if true_divisor == Decimal::new(0, 0) {
+                    None
+                } else {
+                    Some(MoneyWithVATRatio {
+                        net_ratio: true_dividend.net.amount / true_divisor,
+                        gross_ratio: true_dividend.get_gross().amount / true_divisor,
+                    })
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    #[staticmethod]
+    fn fast_sum(operands: Vec<Option<Self>>, _py: Python) -> PyResult<Self> {
         let mut net_sum = Decimal::new(0, 0);
         let mut tax_sum = Decimal::new(0, 0);
 
         for item in operands {
-            net_sum += item.net.amount;
-            tax_sum += item.tax.amount;
+            if let Some(value) = item {
+                net_sum += value.net.amount;
+                tax_sum += value.tax.amount;
+            }
         }
 
         Ok(MoneyWithVAT {
@@ -271,5 +394,33 @@ impl MoneyWithVAT {
                 tax: Money { amount: tax_sum },
             }))
         }
+    }
+}
+
+#[pyclass]
+#[derive(Debug, Clone)]
+pub struct MoneyWithVATRatio {
+    pub net_ratio: Decimal,
+    pub gross_ratio: Decimal,
+}
+
+#[pymethods]
+impl MoneyWithVATRatio {
+    #[new]
+    fn new(net_ratio: Decimal, gross_ratio: Decimal, _py: Python) -> Self {
+        Self {
+            net_ratio,
+            gross_ratio,
+        }
+    }
+
+    #[getter(net_ratio)]
+    fn get_net_ratio(&self) -> Decimal {
+        self.net_ratio
+    }
+
+    #[getter(gross_ratio)]
+    fn get_gross_ratio(&self) -> Decimal {
+        self.gross_ratio
     }
 }

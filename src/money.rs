@@ -75,7 +75,7 @@ impl Money {
                 ))
             }
         } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
-            Ok(Money {
+            Ok(Self {
                 amount: self.amount + other_money.amount,
             })
         } else {
@@ -99,7 +99,7 @@ impl Money {
                 ))
             }
         } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
-            Ok(Money {
+            Ok(Self {
                 amount: self.amount - other_money.amount,
             })
         } else {
@@ -112,7 +112,7 @@ impl Money {
     fn __rsub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
         if let Ok(i) = other.extract::<i32>() {
             if i == 0 {
-                Ok(Money {
+                Ok(Self {
                     amount: -self.amount,
                 })
             } else {
@@ -121,7 +121,7 @@ impl Money {
                 ))
             }
         } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
-            Ok(Money {
+            Ok(Self {
                 amount: other_money.amount - self.amount,
             })
         } else {
@@ -132,12 +132,8 @@ impl Money {
     }
 
     fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(i) = other.extract::<i32>() {
-            Ok(Money {
-                amount: self.amount * Decimal::from_i32(i).unwrap(),
-            })
-        } else if let Ok(i) = other.extract::<f64>() {
-            Ok(Money {
+        if let Ok(i) = other.extract::<f64>() {
+            Ok(Self {
                 amount: self.amount * Decimal::from_f64(i).unwrap(),
             })
         } else {
@@ -153,12 +149,7 @@ impl Money {
 
     fn __truediv__(&self, other: Bound<PyAny>) -> PyResult<PyObject> {
         Python::with_gil(|py| {
-            if let Ok(i) = other.extract::<i32>() {
-                Ok(Self {
-                    amount: self.amount / Decimal::from_i32(i).unwrap(),
-                }
-                .into_py(py))
-            } else if let Ok(i) = other.extract::<f64>() {
+            if let Ok(i) = other.extract::<f64>() {
                 Ok(Self {
                     amount: self.amount / Decimal::from_f64(i).unwrap(),
                 }
