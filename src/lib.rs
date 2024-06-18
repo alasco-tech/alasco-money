@@ -9,7 +9,7 @@ use crate::money::Money;
 use crate::money_vat::MoneyWithVAT;
 
 #[pymodule]
-fn alasco_money(_py: Python, m: &PyModule) -> PyResult<()> {
+fn alasco_money(m: &Bound<'_, PyModule>) -> PyResult<()> {
     env_logger::init(); // Initialize logging
     m.add_class::<Money>()?;
     m.add_class::<MoneyWithVAT>()?;

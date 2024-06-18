@@ -1,8 +1,9 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::PyIterator;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use crate::money::Money;
@@ -119,6 +120,23 @@ impl MoneyWithVAT {
         };
     }
 
+    fn __str__(&self) -> String {
+        format!("{} {}", self.net.amount, self.tax.amount)
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "MoneyWithVAT(net='{}', tax='{}')",
+            self.net.amount, self.tax.amount
+        )
+    }
+
+    fn __hash__(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.gross().amount.hash(&mut hasher);
+        hasher.finish()
+    }
+
     fn __add__(&self, other: &Self) -> Self {
         Self {
             net: Money {
@@ -174,23 +192,16 @@ impl MoneyWithVAT {
         }
     }
 
-    fn __str__(&self) -> String {
-        format!("{} {}", self.net.amount, self.tax.amount)
-    }
-
-    fn __repr__(&self) -> String {
-        format!(
-            "MoneyWithVAT(net='{}', tax='{}')",
-            self.net.amount, self.tax.amount
-        )
-    }
-
     fn __bool__(&self) -> bool {
         !self.net.amount.is_zero() || !self.tax.amount.is_zero()
     }
 
     fn __eq__(&self, other: &Self) -> bool {
         self.gross().amount == other.gross().amount
+    }
+
+    fn __ne__(&self, other: &Self) -> bool {
+        self.gross().amount != other.gross().amount
     }
 
     fn __lt__(&self, other: &Self) -> bool {
@@ -210,19 +221,13 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
-    fn fast_sum(operands: PyObject, py: Python) -> PyResult<Self> {
-        // Convert Python Iterable to Rust Iterator
-        let iter = PyIterator::from_object(py, &operands)?;
-
+    fn fast_sum(operands: Vec<Self>, _py: Python) -> PyResult<Self> {
         let mut net_sum = Decimal::new(0, 0);
         let mut tax_sum = Decimal::new(0, 0);
 
-        for item in iter {
-            let item = item?;
-            let money_with_vat: MoneyWithVAT = item.extract()?;
-
-            net_sum += money_with_vat.net.amount;
-            tax_sum += money_with_vat.tax.amount;
+        for item in operands {
+            net_sum += item.net.amount;
+            tax_sum += item.tax.amount;
         }
 
         Ok(MoneyWithVAT {
@@ -232,19 +237,15 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
-    fn fast_sum_with_none(operands: PyObject, py: Python) -> PyResult<Option<Self>> {
+    fn fast_sum_with_none(operands: Vec<Option<Self>>, _py: Python) -> PyResult<Option<Self>> {
         // Convert Python Iterable to Rust Iterator
-        let iter = PyIterator::from_object(py, &operands)?;
 
         let mut net_sum: Decimal = Decimal::new(0, 0);
         let mut tax_sum: Decimal = Decimal::new(0, 0);
         let mut any_value: bool = false;
 
-        for item in iter {
-            let item = item?;
-            let money_with_vat: Option<MoneyWithVAT> = Some(item.extract()?);
-
-            if let Some(value) = money_with_vat {
+        for item in operands {
+            if let Some(value) = item {
                 net_sum += value.net.amount;
                 tax_sum += value.tax.amount;
                 any_value = true;

@@ -1,8 +1,9 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::PyIterator;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 #[pyclass]
@@ -50,6 +51,20 @@ impl Money {
         }
     }
 
+    fn __str__(&self) -> String {
+        self.amount.to_string()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("Money('{}')", self.amount)
+    }
+
+    fn __hash__(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.amount.hash(&mut hasher);
+        hasher.finish()
+    }
+
     fn __add__(&self, other: &Self) -> Self {
         Self {
             amount: self.amount + other.amount,
@@ -80,20 +95,16 @@ impl Money {
         }
     }
 
-    fn __str__(&self) -> String {
-        self.amount.to_string()
-    }
-
-    fn __repr__(&self) -> String {
-        format!("Money('{}')", self.amount)
-    }
-
     fn __bool__(&self) -> bool {
         !self.amount.is_zero()
     }
 
     fn __eq__(&self, other: &Self) -> bool {
         self.amount == other.amount
+    }
+
+    fn __ne__(&self, other: &Self) -> bool {
+        self.amount != other.amount
     }
 
     fn __lt__(&self, other: &Self) -> bool {
@@ -114,16 +125,11 @@ impl Money {
 }
 
 #[pyfunction]
-pub fn sum_(elems: PyObject, py: Python) -> PyResult<Money> {
-    let iter = PyIterator::from_object(py, &elems)?;
-
+pub fn sum_(elems: Vec<Option<Money>>, _py: Python) -> PyResult<Money> {
     let mut amount: Decimal = Decimal::new(0, 0);
 
-    for item in iter {
-        let item = item?;
-        let money: Option<Money> = item.extract()?;
-
-        if let Some(value) = money {
+    for item in elems {
+        if let Some(value) = item {
             amount += value.amount;
         }
     }
