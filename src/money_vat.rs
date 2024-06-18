@@ -111,11 +111,11 @@ impl MoneyWithVAT {
     }
 
     fn is_equal_up_to_cents(&self, other: Self) -> bool {
-        self.get_gross().round(2).amount == other.get_gross().round(2).amount
+        self.get_gross().round(Some(2)).amount == other.get_gross().round(Some(2)).amount
     }
 
     fn is_lower_up_to_cents(&self, other: Self) -> bool {
-        self.get_gross().round(2).amount < other.get_gross().round(2).amount
+        self.get_gross().round(Some(2)).amount < other.get_gross().round(Some(2)).amount
     }
 
     fn is_lower_or_equal_up_to_cents(&self, other: Self) -> bool {
@@ -123,13 +123,13 @@ impl MoneyWithVAT {
     }
 
     fn rounded_to_cents(&self) -> Self {
-        let rounded_net = self.net.round(2).amount;
+        let rounded_net = self.net.round(Some(2)).amount;
         return Self {
             net: Money {
                 amount: rounded_net,
             },
             tax: Money {
-                amount: self.get_gross().round(2).amount - rounded_net,
+                amount: self.get_gross().round(Some(2)).amount - rounded_net,
             },
         };
     }
@@ -174,7 +174,15 @@ impl MoneyWithVAT {
     }
 
     fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(i) = other.extract::<i32>() {
+        if let Ok(other_ratio) = other.extract::<PyRef<MoneyWithVATRatio>>() {
+            let net_value = other_ratio.net_ratio * self.net.amount;
+            Ok(Self {
+                net: Money { amount: net_value },
+                tax: Money {
+                    amount: other_ratio.gross_ratio * self.get_gross().amount - net_value,
+                },
+            })
+        } else if let Ok(i) = other.extract::<i32>() {
             let other_value = Decimal::from_i32(i).unwrap();
             Ok(Self {
                 net: Money {
@@ -192,14 +200,6 @@ impl MoneyWithVAT {
                 },
                 tax: Money {
                     amount: self.tax.amount * other_value,
-                },
-            })
-        } else if let Ok(other_ratio) = other.extract::<PyRef<MoneyWithVATRatio>>() {
-            let net_value = other_ratio.net_ratio * self.net.amount;
-            Ok(Self {
-                net: Money { amount: net_value },
-                tax: Money {
-                    amount: other_ratio.gross_ratio * self.get_gross().amount - net_value,
                 },
             })
         } else {

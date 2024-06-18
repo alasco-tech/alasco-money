@@ -90,6 +90,7 @@ def test_mul_bad():
 def test_div():
     x = Money(50)
     y = Money(2)
+
     assert x / y == Decimal(25)
 
 

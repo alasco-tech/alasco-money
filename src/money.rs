@@ -45,9 +45,12 @@ impl Money {
         self.amount
     }
 
-    pub fn round(&self, n: u32) -> Self {
+    pub fn round(&self, n: Option<i32>) -> Self {
         Self {
-            amount: self.amount.round_dp(n),
+            amount: round_with_negative_scale(
+                self.amount,
+                if let Some(true_n) = n { true_n } else { 0 },
+            ),
         }
     }
 
@@ -66,7 +69,11 @@ impl Money {
     }
 
     fn __add__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(i) = other.extract::<i32>() {
+        if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+            Ok(Self {
+                amount: self.amount + other_money.amount,
+            })
+        } else if let Ok(i) = other.extract::<i32>() {
             if i == 0 {
                 Ok(self.clone())
             } else {
@@ -74,10 +81,6 @@ impl Money {
                     "Unsupported operand",
                 ))
             }
-        } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
-            Ok(Self {
-                amount: self.amount + other_money.amount,
-            })
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Unsupported operand",
@@ -90,7 +93,11 @@ impl Money {
     }
 
     fn __sub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(i) = other.extract::<i32>() {
+        if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+            Ok(Self {
+                amount: self.amount - other_money.amount,
+            })
+        } else if let Ok(i) = other.extract::<i32>() {
             if i == 0 {
                 Ok(self.clone())
             } else {
@@ -98,10 +105,6 @@ impl Money {
                     "Unsupported operand",
                 ))
             }
-        } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
-            Ok(Self {
-                amount: self.amount - other_money.amount,
-            })
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Unsupported operand",
@@ -110,7 +113,11 @@ impl Money {
     }
 
     fn __rsub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(i) = other.extract::<i32>() {
+        if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+            Ok(Self {
+                amount: other_money.amount - self.amount,
+            })
+        } else if let Ok(i) = other.extract::<i32>() {
             if i == 0 {
                 Ok(Self {
                     amount: -self.amount,
@@ -120,10 +127,6 @@ impl Money {
                     "Unsupported operand",
                 ))
             }
-        } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
-            Ok(Self {
-                amount: other_money.amount - self.amount,
-            })
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Unsupported operand",
@@ -149,7 +152,9 @@ impl Money {
 
     fn __truediv__(&self, other: Bound<PyAny>) -> PyResult<PyObject> {
         Python::with_gil(|py| {
-            if let Ok(i) = other.extract::<f64>() {
+            if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+                Ok((self.amount / other_money.amount).into_py(py))
+            } else if let Ok(i) = other.extract::<f64>() {
                 Ok(Self {
                     amount: self.amount / Decimal::from_f64(i).unwrap(),
                 }
@@ -159,8 +164,6 @@ impl Money {
                     amount: self.amount / i,
                 }
                 .into_py(py))
-            } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
-                Ok((self.amount / other_money.amount).into_py(py))
             } else {
                 Err(pyo3::exceptions::PyTypeError::new_err(
                     "Unsupported operand",
@@ -221,4 +224,13 @@ pub fn sum_(elems: Vec<Option<Money>>, _py: Python) -> PyResult<Money> {
     }
 
     Ok(Money { amount })
+}
+
+fn round_with_negative_scale(value: Decimal, scale: i32) -> Decimal {
+    if scale >= 0 {
+        return value.round_dp(scale as u32);
+    }
+
+    let factor = Decimal::new(10_i64.pow((-scale) as u32), 0);
+    (value / factor).round() * factor
 }
