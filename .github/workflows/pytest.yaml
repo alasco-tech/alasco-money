@@ -23,12 +23,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          pip install pytest maturin
 
       - name: Build Rust project
         run: |
-          pip install maturin
-          maturin develop --release
+          maturin build
+          pip install target/wheels/*
 
       - name: Run Python tests
         run: |
