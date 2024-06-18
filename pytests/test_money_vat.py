@@ -8,7 +8,7 @@ import pytest as _pytest
     "subject",
     [_money.MoneyWithVAT(), _money.MoneyWithVAT(None, None), _money.MoneyWithVAT(0, 0)],
 )
-def test_default_init(subject, euro_currency):
+def test_default_init(subject):
     assert subject.net.amount == 0
     assert subject.tax.amount == 0
     assert subject.gross.amount == 0
@@ -256,10 +256,10 @@ def test_ratio_mul():
     assert left.gross.amount == right.gross.amount
 
 
-def test_safe_ratio_error_cases(vat_money):
-    money = vat_money(1000000, 19)
+def test_safe_ratio_error_cases():
+    money = _money.MoneyWithVAT(1000000, 19)
     money_0 = _money.MoneyWithVAT()
-    money_almost_0 = vat_money("0.00000000000001", 0)
+    money_almost_0 = _money.MoneyWithVAT("0.00000000000001", 0)
 
     assert _money.MoneyWithVAT.safe_ratio(money, money).net_ratio == 1
     assert _money.MoneyWithVAT.safe_ratio(money, money_0) is None

@@ -1,5 +1,6 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyIterator;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use std::str::FromStr;
@@ -38,12 +39,12 @@ impl Money {
         }
     }
 
-    // #[getter]
-    // fn amount(&self) -> String {
-    //     self.amount.to_string()
-    // }
+    #[getter(amount)]
+    fn get_amount(&self) -> Decimal {
+        self.amount
+    }
 
-    fn round(&self, n: u32) -> Self {
+    pub fn round(&self, n: u32) -> Self {
         Self {
             amount: self.amount.round_dp(n),
         }
@@ -110,4 +111,22 @@ impl Money {
     fn __ge__(&self, other: &Self) -> bool {
         self.amount >= other.amount
     }
+}
+
+#[pyfunction]
+pub fn sum_(elems: PyObject, py: Python) -> PyResult<Money> {
+    let iter = PyIterator::from_object(py, &elems)?;
+
+    let mut amount: Decimal = Decimal::new(0, 0);
+
+    for item in iter {
+        let item = item?;
+        let money: Option<Money> = item.extract()?;
+
+        if let Some(value) = money {
+            amount += value.amount;
+        }
+    }
+
+    Ok(Money { amount })
 }
