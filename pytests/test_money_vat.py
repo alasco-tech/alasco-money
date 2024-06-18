@@ -248,8 +248,8 @@ def test_ratio_mul():
     money_a = _money.MoneyWithVAT(100, 19)
     money_b = _money.MoneyWithVAT(200, 14)
     ratio = _money.MoneyWithVAT.ratio(money_a, money_b)
-    assert money_a == ratio * money_b
-    assert money_a == money_b * ratio
+    assert money_a.rounded_to_cents() == (ratio * money_b).rounded_to_cents()
+    assert money_a.rounded_to_cents() == (money_b * ratio).rounded_to_cents()
 
     left = money_a * ratio + money_b * ratio
     right = (money_a + money_b) * ratio

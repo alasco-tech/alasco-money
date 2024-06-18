@@ -194,6 +194,14 @@ impl MoneyWithVAT {
                     amount: self.tax.amount * other_value,
                 },
             })
+        } else if let Ok(other_ratio) = other.extract::<PyRef<MoneyWithVATRatio>>() {
+            let net_value = other_ratio.net_ratio * self.net.amount;
+            Ok(Self {
+                net: Money { amount: net_value },
+                tax: Money {
+                    amount: other_ratio.gross_ratio * self.get_gross().amount - net_value,
+                },
+            })
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Unsupported operand",
@@ -272,6 +280,44 @@ impl MoneyWithVAT {
 
     fn __ge__(&self, other: &Self) -> bool {
         self.get_gross().amount >= other.get_gross().amount
+    }
+
+    #[staticmethod]
+    fn max(items: Vec<Option<Self>>) -> Option<Self> {
+        let mut max_net: Option<Decimal> = None;
+        let mut max_gross: Option<Decimal> = None;
+
+        for item in items {
+            if let Some(value) = item {
+                max_net = Some(if let Some(true_max_net) = max_net {
+                    true_max_net.max(value.get_net().amount)
+                } else {
+                    value.get_net().amount
+                });
+                max_gross = Some(if let Some(true_max_gross) = max_gross {
+                    true_max_gross.max(value.get_gross().amount)
+                } else {
+                    value.get_gross().amount
+                });
+            }
+        }
+
+        if let Some(true_max_net) = max_net {
+            if let Some(true_max_gross) = max_gross {
+                Some(Self {
+                    net: Money {
+                        amount: true_max_net,
+                    },
+                    tax: Money {
+                        amount: true_max_gross - true_max_net,
+                    },
+                })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     #[staticmethod]
@@ -372,8 +418,6 @@ impl MoneyWithVAT {
 
     #[staticmethod]
     fn fast_sum_with_none(operands: Vec<Option<Self>>, _py: Python) -> PyResult<Option<Self>> {
-        // Convert Python Iterable to Rust Iterator
-
         let mut net_sum: Decimal = Decimal::new(0, 0);
         let mut tax_sum: Decimal = Decimal::new(0, 0);
         let mut any_value: bool = false;
@@ -422,5 +466,23 @@ impl MoneyWithVATRatio {
     #[getter(gross_ratio)]
     fn get_gross_ratio(&self) -> Decimal {
         self.gross_ratio
+    }
+
+    fn __str__(&self) -> String {
+        format!("{} {}", self.net_ratio, self.gross_ratio)
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "MoneyWithVATRatio(net='{}', gross='{}')",
+            self.net_ratio, self.gross_ratio
+        )
+    }
+
+    fn __mul__(&self, other: Decimal) -> Self {
+        Self {
+            net_ratio: self.net_ratio * other,
+            gross_ratio: self.gross_ratio * other,
+        }
     }
 }
