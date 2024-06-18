@@ -65,33 +65,128 @@ impl Money {
         hasher.finish()
     }
 
-    fn __add__(&self, other: &Self) -> Self {
-        Self {
-            amount: self.amount + other.amount,
+    fn __add__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        if let Ok(i) = other.extract::<i32>() {
+            if i == 0 {
+                Ok(self.clone())
+            } else {
+                Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Unsupported operand",
+                ))
+            }
+        } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+            Ok(Money {
+                amount: self.amount + other_money.amount,
+            })
+        } else {
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "Unsupported operand",
+            ))
         }
     }
 
-    fn __sub__(&self, other: &Self) -> Self {
-        Self {
-            amount: self.amount - other.amount,
+    fn __radd__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        self.__add__(other)
+    }
+
+    fn __sub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        if let Ok(i) = other.extract::<i32>() {
+            if i == 0 {
+                Ok(self.clone())
+            } else {
+                Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Unsupported operand",
+                ))
+            }
+        } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+            Ok(Money {
+                amount: self.amount - other_money.amount,
+            })
+        } else {
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "Unsupported operand",
+            ))
         }
     }
 
-    fn __mul__(&self, other: f64) -> Self {
-        Self {
-            amount: self.amount * Decimal::from_f64(other).unwrap(),
+    fn __rsub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        if let Ok(i) = other.extract::<i32>() {
+            if i == 0 {
+                Ok(Money {
+                    amount: -self.amount,
+                })
+            } else {
+                Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Unsupported operand",
+                ))
+            }
+        } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+            Ok(Money {
+                amount: other_money.amount - self.amount,
+            })
+        } else {
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "Unsupported operand",
+            ))
         }
     }
 
-    fn __truediv__(&self, other: f64) -> Self {
-        Self {
-            amount: self.amount / Decimal::from_f64(other).unwrap(),
+    fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        if let Ok(i) = other.extract::<i32>() {
+            Ok(Money {
+                amount: self.amount * Decimal::from_i32(i).unwrap(),
+            })
+        } else if let Ok(i) = other.extract::<f64>() {
+            Ok(Money {
+                amount: self.amount * Decimal::from_f64(i).unwrap(),
+            })
+        } else {
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "Unsupported operand",
+            ))
         }
+    }
+
+    fn __rmul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        self.__mul__(other)
+    }
+
+    fn __truediv__(&self, other: Bound<PyAny>) -> PyResult<PyObject> {
+        Python::with_gil(|py| {
+            if let Ok(i) = other.extract::<i32>() {
+                Ok(Self {
+                    amount: self.amount / Decimal::from_i32(i).unwrap(),
+                }
+                .into_py(py))
+            } else if let Ok(i) = other.extract::<f64>() {
+                Ok(Self {
+                    amount: self.amount / Decimal::from_f64(i).unwrap(),
+                }
+                .into_py(py))
+            } else if let Ok(i) = other.extract::<Decimal>() {
+                Ok(Self {
+                    amount: self.amount / i,
+                }
+                .into_py(py))
+            } else if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+                Ok((self.amount / other_money.amount).into_py(py))
+            } else {
+                Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Unsupported operand",
+                ))
+            }
+        })
     }
 
     fn __neg__(&self) -> Self {
         Self {
             amount: -self.amount,
+        }
+    }
+
+    fn __abs__(&self) -> Self {
+        Self {
+            amount: self.amount.abs(),
         }
     }
 

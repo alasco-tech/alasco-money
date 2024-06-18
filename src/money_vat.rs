@@ -192,6 +192,17 @@ impl MoneyWithVAT {
         }
     }
 
+    fn __abs__(&self) -> Self {
+        Self {
+            net: Money {
+                amount: self.net.amount.abs(),
+            },
+            tax: Money {
+                amount: self.tax.amount.abs(),
+            },
+        }
+    }
+
     fn __bool__(&self) -> bool {
         !self.net.amount.is_zero() || !self.tax.amount.is_zero()
     }
