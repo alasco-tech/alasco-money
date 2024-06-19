@@ -9,6 +9,8 @@ use std::str::FromStr;
 
 use crate::money::Money;
 
+const KNOWN_VAT_RATES: [i16; 9] = [0, 5, 7, 10, 13, 16, 19, 20, 25];
+
 #[pyclass]
 #[derive(Debug, Clone)]
 pub struct MoneyWithVAT {
@@ -98,7 +100,23 @@ impl MoneyWithVAT {
 
     #[getter]
     fn tax_rate_for_display(&self) -> Decimal {
-        self.tax_rate()
+        let boundary = Decimal::from_str("0.05").unwrap();
+        let tax_rate = self.tax_rate();
+        let vat_rates = KNOWN_VAT_RATES.map(|n| Decimal::new(n as i64, 2));
+
+        if vat_rates.contains(&tax_rate) {
+            return tax_rate;
+        }
+
+        for rate in vat_rates {
+            let vat = rate * self.net.amount;
+            let vat_diff = (vat - self.tax.amount).abs();
+            if vat_diff < boundary {
+                return rate;
+            }
+        }
+
+        return tax_rate;
     }
 
     #[getter]
@@ -441,6 +459,20 @@ impl MoneyWithVAT {
         }
     }
 
+    #[staticmethod]
+    fn from_json(dict: Option<Bound<PyAny>>, _py: Python) -> PyResult<Self> {
+        let result = std::panic::catch_unwind(|| json_to_money_vat(dict));
+
+        if result.is_err() {
+            Err(PyValueError::new_err("Invalid dict"))
+        } else {
+            match result.unwrap() {
+                Ok(money_vat) => Ok(money_vat),
+                Err(_) => Err(PyValueError::new_err("Invalid dict")),
+            }
+        }
+    }
+
     pub fn copy(&self) -> Self {
         self.clone()
     }
@@ -497,5 +529,41 @@ impl MoneyWithVATRatio {
             net_ratio: self.net_ratio * other,
             gross_ratio: self.gross_ratio * other,
         }
+    }
+}
+
+fn json_to_money_vat(dict: Option<Bound<PyAny>>) -> PyResult<MoneyWithVAT> {
+    let dig = |any: Bound<PyAny>, key: &str| {
+        any.extract::<Bound<PyDict>>()
+            .unwrap()
+            .get_item("amount_with_vat")
+            .unwrap()
+            .unwrap()
+            .extract::<Bound<PyDict>>()
+            .unwrap()
+            .get_item(key)
+            .unwrap()
+            .unwrap()
+            .extract::<Bound<PyDict>>()
+            .unwrap()
+            .get_item("amount")
+            .unwrap()
+            .unwrap()
+            .extract::<Decimal>()
+            .unwrap()
+    };
+
+    if let Some(money_dict) = dict {
+        let net = dig(money_dict.clone(), "net");
+        let gross = dig(money_dict.clone(), "gross");
+
+        Ok(MoneyWithVAT {
+            net: Money { amount: net },
+            tax: Money {
+                amount: gross - net,
+            },
+        })
+    } else {
+        Err(PyValueError::new_err("Invalid dict"))
     }
 }

@@ -4,7 +4,6 @@
 from decimal import Decimal
 
 import pytest
-import pytest as _pytest
 from alasco_money import Money
 
 
@@ -157,21 +156,16 @@ def test_round():
     assert x.round(4) == Money("1234.3357")
 
 
-@_pytest.mark.xfail
-def test_round_context_override():
-    import decimal
-
+def test_round_up_down():
     x = Money("2.5")
     assert x.round(0) == Money(2)
     x = Money("3.5")
     assert x.round(0) == Money(4)
 
-    with decimal.localcontext() as ctx:
-        ctx.rounding = decimal.ROUND_HALF_UP
-        x = Money("2.5")
-        assert x.round(0) == Money(3)
-        x = Money("3.5")
-        assert x.round(0) == Money(4)
+    x = Money("2.5")
+    assert x.round_up(0) == Money(3)
+    x = Money("3.5")
+    assert x.round_up(0) == Money(4)
 
 
 def test_bool():

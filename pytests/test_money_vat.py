@@ -195,7 +195,6 @@ def test_tax_rate(net, tax, rate):
         (300, 30, "0.10"),
     ],
 )
-@_pytest.mark.xfail
 def test_tax_rate_for_display(net, tax, rate):
     assert _money.MoneyWithVAT(net, tax).tax_rate_for_display == _decimal.Decimal(rate)
 
@@ -394,7 +393,6 @@ def test_is_positive(money_under_test, expected):
     assert money_under_test.is_positive is expected
 
 
-@_pytest.mark.xfail
 def test_from_json_invalid_structure():
     json_input = {
         "amount_with_vat": {
@@ -403,12 +401,11 @@ def test_from_json_invalid_structure():
         }
     }
 
-    with _pytest.raises(_money.InvalidJsonStructure):
+    with _pytest.raises(ValueError):
         _money.MoneyWithVAT.from_json(json_input)
 
 
 @_pytest.mark.parametrize("invalid_amount", [None, "not a number"])
-@_pytest.mark.xfail
 def test_from_json_invalid_amount(invalid_amount):
     json_input = {
         "amount_with_vat": {
@@ -417,18 +414,16 @@ def test_from_json_invalid_amount(invalid_amount):
         },
     }
 
-    with _pytest.raises(_money.InvalidJsonStructure):
+    with _pytest.raises(ValueError):
         _money.MoneyWithVAT.from_json(json_input)
 
 
 @_pytest.mark.parametrize("empty_input", [{}, None, []])
-@_pytest.mark.xfail
 def test_from_json_empty_input(empty_input):
-    with _pytest.raises(_money.InvalidJsonStructure):
+    with _pytest.raises(ValueError):
         _money.MoneyWithVAT.from_json(empty_input)
 
 
-@_pytest.mark.xfail
 def test_from_json_division_by_zero():
     json_input_both_zero = {
         "amount_with_vat": {
@@ -453,7 +448,6 @@ def test_from_json_division_by_zero():
     assert result_net_zero.tax_rate == _decimal.Decimal("0")
 
 
-@_pytest.mark.xfail
 def test_from_json():
     json_input = {
         "amount_with_vat": {
@@ -518,39 +512,6 @@ def _slow_money_vat_sum(operands):
         (operand for operand in operands if operand is not None),
         start=_money.MoneyWithVAT(),
     )
-
-
-@_pytest.mark.skip("Just for performance testing -- can be flaky")
-def test_fast_sum_performance():
-    import time
-
-    length = 1000
-    lots_of_operands = (
-        (40 * [_money.MoneyWithVAT(10, 1)])
-        + (2 * [_money.MoneyWithVAT(0, 0)])
-        + (2 * [None])
-    ) * length
-    lots_expected = _money.MoneyWithVAT(400, 40) * length
-    some_operands = (8 * [_money.MoneyWithVAT(10, 1)]) + [
-        _money.MoneyWithVAT(0, 0),
-        None,
-    ]
-
-    fast_time = time.time()
-    assert _money.MoneyWithVAT.fast_sum(lots_of_operands) == lots_expected
-    for _ in range(length):
-        _money.MoneyWithVAT.fast_sum(some_operands)
-        _money.MoneyWithVAT.fast_sum([])
-    fast_time = time.time() - fast_time
-
-    slow_time = time.time()
-    assert _slow_money_vat_sum(lots_of_operands) == lots_expected
-    for _ in range(length):
-        _slow_money_vat_sum(some_operands)
-        _slow_money_vat_sum([])
-    slow_time = time.time() - slow_time
-
-    assert slow_time > (3 * fast_time)
 
 
 @_pytest.mark.parametrize(

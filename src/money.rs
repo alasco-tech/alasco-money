@@ -2,7 +2,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use rust_decimal::prelude::FromPrimitive;
-use rust_decimal::Decimal;
+use rust_decimal::{Decimal, RoundingStrategy};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
@@ -51,6 +51,17 @@ impl Money {
             amount: round_with_negative_scale(
                 self.amount,
                 if let Some(true_n) = n { true_n } else { 0 },
+                false,
+            ),
+        }
+    }
+
+    pub fn round_up(&self, n: Option<i32>) -> Self {
+        Self {
+            amount: round_with_negative_scale(
+                self.amount,
+                if let Some(true_n) = n { true_n } else { 0 },
+                true,
             ),
         }
     }
@@ -239,9 +250,15 @@ pub fn sum_(elems: Vec<Option<Money>>, _py: Python) -> PyResult<Money> {
     Ok(Money { amount })
 }
 
-fn round_with_negative_scale(value: Decimal, scale: i32) -> Decimal {
+fn round_with_negative_scale(value: Decimal, scale: i32, round_up: bool) -> Decimal {
+    let strategy = if round_up {
+        RoundingStrategy::MidpointAwayFromZero
+    } else {
+        RoundingStrategy::MidpointNearestEven
+    };
+
     if scale >= 0 {
-        return value.round_dp(scale as u32);
+        return value.round_dp_with_strategy(scale as u32, strategy);
     }
 
     let factor = Decimal::new(10_i64.pow((-scale) as u32), 0);
