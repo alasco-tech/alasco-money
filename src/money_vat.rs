@@ -90,8 +90,8 @@ impl MoneyWithVAT {
         }
     }
 
-    #[getter]
-    fn tax_rate(&self) -> Decimal {
+    #[getter(tax_rate)]
+    fn get_tax_rate(&self) -> Decimal {
         if self.net.amount == Decimal::new(0, 0) {
             Decimal::new(0, 0)
         } else {
@@ -99,10 +99,10 @@ impl MoneyWithVAT {
         }
     }
 
-    #[getter]
-    fn tax_rate_for_display(&self) -> Decimal {
+    #[getter(tax_rate_for_display)]
+    fn get_tax_rate_for_display(&self) -> Decimal {
         let boundary = Decimal::from_str("0.05").unwrap();
-        let tax_rate = self.tax_rate();
+        let tax_rate = self.get_tax_rate();
         let vat_rates = KNOWN_VAT_RATES.map(|n| Decimal::new(n as i64, 2));
 
         if vat_rates.contains(&tax_rate) {
@@ -120,13 +120,13 @@ impl MoneyWithVAT {
         return tax_rate;
     }
 
-    #[getter]
-    fn is_positive(&self) -> bool {
+    #[getter(is_positive)]
+    fn get_is_positive(&self) -> bool {
         self.get_gross().amount > Decimal::new(0, 0)
     }
 
-    #[getter]
-    fn is_negative(&self) -> bool {
+    #[getter(is_negative)]
+    fn get_is_negative(&self) -> bool {
         self.get_gross().amount < Decimal::new(0, 0)
     }
 
