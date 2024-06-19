@@ -1,5 +1,6 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use std::collections::hash_map::DefaultHasher;
@@ -438,6 +439,18 @@ impl MoneyWithVAT {
                 tax: Money { amount: tax_sum },
             }))
         }
+    }
+
+    pub fn copy(&self) -> Self {
+        self.clone()
+    }
+
+    pub fn __copy__(&self) -> Self {
+        self.clone()
+    }
+
+    pub fn __deepcopy__(&self, _memo: Bound<PyDict>) -> Self {
+        self.clone()
     }
 }
 
