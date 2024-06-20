@@ -487,38 +487,42 @@ impl MoneyWithVAT {
     }
 }
 
-fn json_to_money_vat(dict: Option<Bound<PyAny>>) -> PyResult<MoneyWithVAT> {
-    let dig = |any: Bound<PyAny>, key: &str| {
-        any.extract::<Bound<PyDict>>()
-            .unwrap()
-            .get_item("amount_with_vat")
-            .unwrap()
-            .unwrap()
-            .extract::<Bound<PyDict>>()
-            .unwrap()
-            .get_item(key)
-            .unwrap()
-            .unwrap()
-            .extract::<Bound<PyDict>>()
-            .unwrap()
-            .get_item("amount")
-            .unwrap()
-            .unwrap()
-            .extract::<Decimal>()
-            .unwrap()
+fn json_to_money_vat(raw: Option<Bound<PyAny>>) -> PyResult<MoneyWithVAT> {
+    let dig = |any: &PyAny, key: &str| {
+        if let Ok(dict) = any.extract::<&PyDict>() {
+            if let Ok(Some(amount_with_vat)) = dict.get_item("amount_with_vat") {
+                if let Ok(true_amount_with_vat) = amount_with_vat.extract::<&PyDict>() {
+                    if let Ok(Some(target)) = true_amount_with_vat.get_item(key) {
+                        if let Ok(true_target) = target.extract::<&PyDict>() {
+                            if let Ok(Some(amount)) = true_target.get_item("amount") {
+                                if let Ok(true_amount) = amount.extract::<Decimal>() {
+                                    return Ok(true_amount);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Err(PyValueError::new_err("Invalid dict"))
     };
 
-    if let Some(money_dict) = dict {
-        let net = dig(money_dict.clone(), "net");
-        let gross = dig(money_dict.clone(), "gross");
+    if let Some(true_raw) = raw {
+        if let Ok(true_dict) = true_raw.extract::<&PyAny>() {
+            let raw_net = dig(true_dict, "net");
+            let raw_gross = dig(true_dict, "gross");
 
-        Ok(MoneyWithVAT {
-            net: Money { amount: net },
-            tax: Money {
-                amount: gross - net,
-            },
-        })
-    } else {
-        Err(PyValueError::new_err("Invalid dict"))
+            return match (raw_net, raw_gross) {
+                (Ok(net), Ok(gross)) => Ok(MoneyWithVAT {
+                    net: Money { amount: net },
+                    tax: Money {
+                        amount: gross - net,
+                    },
+                }),
+                _ => Err(PyValueError::new_err("Invalid dict")),
+            };
+        }
     }
+
+    Err(PyValueError::new_err("Invalid dict"))
 }
