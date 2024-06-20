@@ -171,11 +171,6 @@ impl Money {
                     amount: self.amount / Decimal::from_f64(i).unwrap(),
                 }
                 .into_py(py))
-            } else if let Ok(i) = other.extract::<Decimal>() {
-                Ok(Self {
-                    amount: self.amount / i,
-                }
-                .into_py(py))
             } else {
                 Err(pyo3::exceptions::PyTypeError::new_err(
                     "Unsupported operand",

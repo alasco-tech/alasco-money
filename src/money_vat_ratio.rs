@@ -1,6 +1,7 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyCFunction, PyDict, PyTuple};
+use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 
 #[pyclass]
@@ -13,10 +14,13 @@ pub struct MoneyWithVATRatio {
 #[pymethods]
 impl MoneyWithVATRatio {
     #[new]
-    fn new(net_ratio: Decimal, gross_ratio: Decimal) -> Self {
+    fn new(net_ratio: f64, gross_ratio: f64) -> Self {
+        let net_ratio_decimal = Decimal::from_f64(net_ratio).unwrap();
+        let gross_ratio_decimal = Decimal::from_f64(gross_ratio).unwrap();
+
         Self {
-            net_ratio,
-            gross_ratio,
+            net_ratio: net_ratio_decimal,
+            gross_ratio: gross_ratio_decimal,
         }
     }
 
@@ -41,10 +45,12 @@ impl MoneyWithVATRatio {
         )
     }
 
-    fn __mul__(&self, other: Decimal) -> Self {
+    fn __mul__(&self, other: f64) -> Self {
+        let other_decimal = Decimal::from_f64(other).unwrap();
+
         Self {
-            net_ratio: self.net_ratio * other,
-            gross_ratio: self.gross_ratio * other,
+            net_ratio: self.net_ratio * other_decimal,
+            gross_ratio: self.gross_ratio * other_decimal,
         }
     }
 

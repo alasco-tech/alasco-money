@@ -202,16 +202,6 @@ impl MoneyWithVAT {
                     amount: other_ratio.gross_ratio * self.get_gross().amount - net_value,
                 },
             })
-        } else if let Ok(i) = other.extract::<i32>() {
-            let other_value = Decimal::from_i32(i).unwrap();
-            Ok(Self {
-                net: Money {
-                    amount: self.net.amount * other_value,
-                },
-                tax: Money {
-                    amount: self.tax.amount * other_value,
-                },
-            })
         } else if let Ok(i) = other.extract::<f64>() {
             let other_value = Decimal::from_f64(i).unwrap();
             Ok(Self {
