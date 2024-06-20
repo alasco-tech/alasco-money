@@ -1,6 +1,6 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::{PyCFunction, PyDict, PyTuple};
+use pyo3::types::{PyCFunction, PyDict, PyIterator, PyTuple};
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use std::collections::hash_map::DefaultHasher;
@@ -415,14 +415,18 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
-    fn fast_sum(operands: Vec<Option<Self>>, _py: Python) -> PyResult<Self> {
+    fn fast_sum(iterable: Bound<PyAny>, _py: Python) -> PyResult<Self> {
+        let iterator = PyIterator::from_bound_object(&iterable)?;
+
         let mut net_sum = Decimal::new(0, 0);
         let mut tax_sum = Decimal::new(0, 0);
 
-        for item in operands {
-            if let Some(value) = item {
-                net_sum += value.net.amount;
-                tax_sum += value.tax.amount;
+        for elem in iterator {
+            if let Ok(item) = elem {
+                if let Ok(value) = item.extract::<Self>() {
+                    net_sum += value.net.amount;
+                    tax_sum += value.tax.amount;
+                }
             }
         }
 
@@ -433,16 +437,20 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
-    fn fast_sum_with_none(operands: Vec<Option<Self>>, _py: Python) -> PyResult<Option<Self>> {
+    fn fast_sum_with_none(iterable: Bound<PyAny>, _py: Python) -> PyResult<Option<Self>> {
+        let iterator = PyIterator::from_bound_object(&iterable)?;
+
         let mut net_sum: Decimal = Decimal::new(0, 0);
         let mut tax_sum: Decimal = Decimal::new(0, 0);
         let mut any_value: bool = false;
 
-        for item in operands {
-            if let Some(value) = item {
-                net_sum += value.net.amount;
-                tax_sum += value.tax.amount;
-                any_value = true;
+        for elem in iterator {
+            if let Ok(item) = elem {
+                if let Ok(Some(value)) = item.extract::<Option<Self>>() {
+                    net_sum += value.net.amount;
+                    tax_sum += value.tax.amount;
+                    any_value = true;
+                }
             }
         }
 

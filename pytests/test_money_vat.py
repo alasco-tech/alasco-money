@@ -501,6 +501,7 @@ def test_fast_sum(operands, result):
             _money.MoneyWithVAT(-1, 1),
         ),
         ([None, None, None], None),
+        ((x for x in [None, None, None]), None),
     ],
 )
 def test_fast_sum_with_none(operands, result):
