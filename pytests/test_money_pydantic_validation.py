@@ -40,7 +40,7 @@ def test_money_vat_validator_ok():
 @_pytest.mark.parametrize(
     "data",
     [
-        {"tax": 1, "net": False},
+        {"tax": 1, "net": None},
         {"net": {"amount": 1, "currency": "eur"}},
     ],
 )
