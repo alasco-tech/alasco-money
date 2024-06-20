@@ -10,6 +10,7 @@ use std::str::FromStr;
 use crate::money::Money;
 use crate::money_vat_ratio::MoneyWithVATRatio;
 
+const GERMAN_VAT_RATES: [i16; 5] = [0, 5, 7, 16, 19];
 const KNOWN_VAT_RATES: [i16; 9] = [0, 5, 7, 10, 13, 16, 19, 20, 25];
 
 #[pyclass]
@@ -103,13 +104,12 @@ impl MoneyWithVAT {
     fn get_tax_rate_for_display(&self) -> Decimal {
         let boundary = Decimal::from_str("0.05").unwrap();
         let tax_rate = self.get_tax_rate();
-        let vat_rates = KNOWN_VAT_RATES.map(|n| Decimal::new(n as i64, 2));
 
-        if vat_rates.contains(&tax_rate) {
+        if Self::known_vat_rates().contains(&tax_rate) {
             return tax_rate;
         }
 
-        for rate in vat_rates {
+        for rate in Self::known_vat_rates() {
             let vat = rate * self.net.amount;
             let vat_diff = (vat - self.tax.amount).abs();
             if vat_diff < boundary {
@@ -507,6 +507,28 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
+    fn validate(value: Bound<PyAny>, _info: Option<Bound<PyAny>>) -> PyResult<Self> {
+        if let Ok(money_with_vat) = value.extract::<Self>() {
+            return Ok(money_with_vat);
+        } else if let Ok(dict) = value.extract::<&PyDict>() {
+            if let Ok(Some(net)) = dict.get_item("net") {
+                if let Ok(Some(tax)) = dict.get_item("tax") {
+                    if let Ok(true_net) = net.extract::<Decimal>() {
+                        if let Ok(true_tax) = tax.extract::<Decimal>() {
+                            return Ok(Self {
+                                net: Money { amount: true_net },
+                                tax: Money { amount: true_tax },
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        Err(PyValueError::new_err("Validation error"))
+    }
+
+    #[staticmethod]
     fn __get_pydantic_json_schema__(
         _core_schema: Bound<PyAny>,
         _handler: Bound<PyAny>,
@@ -545,24 +567,7 @@ impl MoneyWithVAT {
             None,
             None,
             |args: &Bound<PyTuple>, _kwargs: Option<&Bound<PyDict>>| -> PyResult<Self> {
-                if let Ok(money_with_vat) = args.get_item(0)?.extract::<Self>() {
-                    return Ok(money_with_vat);
-                } else if let Ok(dict) = args.get_item(0)?.extract::<&PyDict>() {
-                    if let Ok(Some(net)) = dict.get_item("net") {
-                        if let Ok(Some(tax)) = dict.get_item("tax") {
-                            if let Ok(true_net) = net.extract::<Decimal>() {
-                                if let Ok(true_tax) = tax.extract::<Decimal>() {
-                                    return Ok(Self {
-                                        net: Money { amount: true_net },
-                                        tax: Money { amount: true_tax },
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Err(PyValueError::new_err("Validation error"))
+                Self::validate(args.get_item(0).unwrap(), None)
             },
         )?;
 
@@ -615,6 +620,16 @@ impl MoneyWithVAT {
 
     pub fn __deepcopy__(&self, _memo: Bound<PyDict>) -> Self {
         self.clone()
+    }
+
+    #[staticmethod]
+    fn german_vat_rates() -> [Decimal; 5] {
+        GERMAN_VAT_RATES.map(|n| Decimal::new(n as i64, 2))
+    }
+
+    #[staticmethod]
+    fn known_vat_rates() -> [Decimal; 9] {
+        KNOWN_VAT_RATES.map(|n| Decimal::new(n as i64, 2))
     }
 }
 

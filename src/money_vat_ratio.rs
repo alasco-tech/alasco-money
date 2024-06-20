@@ -113,6 +113,28 @@ impl MoneyWithVATRatio {
     }
 
     #[staticmethod]
+    fn validate(value: Bound<PyAny>, _info: Option<Bound<PyAny>>) -> PyResult<Self> {
+        if let Ok(money_with_vat_ratio) = value.extract::<Self>() {
+            return Ok(money_with_vat_ratio);
+        } else if let Ok(dict) = value.extract::<&PyDict>() {
+            if let Ok(Some(net_ratio)) = dict.get_item("net_ratio") {
+                if let Ok(Some(gross_ratio)) = dict.get_item("gross_ratio") {
+                    if let Ok(true_net_ratio) = net_ratio.extract::<Decimal>() {
+                        if let Ok(true_gross_ratio) = gross_ratio.extract::<Decimal>() {
+                            return Ok(Self {
+                                net_ratio: true_net_ratio,
+                                gross_ratio: true_gross_ratio,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        Err(PyValueError::new_err("Validation error"))
+    }
+
+    #[staticmethod]
     fn __get_pydantic_json_schema__(
         _core_schema: Bound<PyAny>,
         _handler: Bound<PyAny>,
@@ -151,24 +173,7 @@ impl MoneyWithVATRatio {
             None,
             None,
             |args: &Bound<PyTuple>, _kwargs: Option<&Bound<PyDict>>| -> PyResult<Self> {
-                if let Ok(money_with_vat_ratio) = args.get_item(0)?.extract::<Self>() {
-                    return Ok(money_with_vat_ratio);
-                } else if let Ok(dict) = args.get_item(0)?.extract::<&PyDict>() {
-                    if let Ok(Some(net_ratio)) = dict.get_item("net_ratio") {
-                        if let Ok(Some(gross_ratio)) = dict.get_item("gross_ratio") {
-                            if let Ok(true_net_ratio) = net_ratio.extract::<Decimal>() {
-                                if let Ok(true_gross_ratio) = gross_ratio.extract::<Decimal>() {
-                                    return Ok(Self {
-                                        net_ratio: true_net_ratio,
-                                        gross_ratio: true_gross_ratio,
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Err(PyValueError::new_err("Validation error"))
+                Self::validate(args.get_item(0).unwrap(), None)
             },
         )?;
 

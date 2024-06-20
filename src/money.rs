@@ -256,6 +256,17 @@ impl Money {
     }
 
     #[staticmethod]
+    fn validate(value: Bound<PyAny>, _info: Option<Bound<PyAny>>) -> PyResult<Self> {
+        if let Ok(money) = value.extract::<Self>() {
+            return Ok(money);
+        } else if let Ok(decimal) = value.extract::<Decimal>() {
+            return Ok(Money { amount: decimal });
+        }
+
+        Err(PyValueError::new_err("Validation error"))
+    }
+
+    #[staticmethod]
     fn __get_pydantic_json_schema__(
         _core_schema: Bound<PyAny>,
         _handler: Bound<PyAny>,
@@ -280,13 +291,7 @@ impl Money {
             None,
             None,
             |args: &Bound<PyTuple>, _: Option<&Bound<PyDict>>| -> PyResult<Self> {
-                if let Ok(money) = args.get_item(0)?.extract::<Self>() {
-                    return Ok(money);
-                } else if let Ok(decimal) = args.get_item(0)?.extract::<Decimal>() {
-                    return Ok(Money { amount: decimal });
-                }
-
-                Err(PyValueError::new_err("Validation error"))
+                Self::validate(args.get_item(0).unwrap(), None)
             },
         )?;
 
