@@ -299,28 +299,37 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
-    fn max(items: Vec<Option<Self>>) -> Option<Self> {
+    #[pyo3(signature = (*args))]
+    fn max(args: &Bound<PyTuple>) -> Option<Self> {
+        let items = if args.len() == 1 {
+            PyIterator::from_bound_object(&args.get_item(0).unwrap()).unwrap()
+        } else {
+            PyIterator::from_bound_object(&args).unwrap()
+        };
+
         let mut max_net: Option<Decimal> = None;
         let mut max_gross: Option<Decimal> = None;
 
         for item in items {
-            if let Some(value) = item {
-                max_net = Some(if let Some(true_max_net) = max_net {
-                    true_max_net.max(value.get_net().amount)
-                } else {
-                    value.get_net().amount
-                });
-                max_gross = Some(if let Some(true_max_gross) = max_gross {
-                    true_max_gross.max(value.get_gross().amount)
-                } else {
-                    value.get_gross().amount
-                });
+            if let Ok(raw_value) = item {
+                if let Ok(value) = raw_value.extract::<MoneyWithVAT>() {
+                    max_net = Some(if let Some(true_max_net) = max_net {
+                        true_max_net.max(value.get_net().amount)
+                    } else {
+                        value.get_net().amount
+                    });
+                    max_gross = Some(if let Some(true_max_gross) = max_gross {
+                        true_max_gross.max(value.get_gross().amount)
+                    } else {
+                        value.get_gross().amount
+                    });
+                }
             }
         }
 
         if let Some(true_max_net) = max_net {
             if let Some(true_max_gross) = max_gross {
-                Some(Self {
+                Some(MoneyWithVAT {
                     net: Money {
                         amount: true_max_net,
                     },
@@ -415,7 +424,7 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
-    fn fast_sum(iterable: Bound<PyAny>, _py: Python) -> PyResult<Self> {
+    fn fast_sum(iterable: Bound<PyAny>) -> PyResult<Self> {
         let iterator = PyIterator::from_bound_object(&iterable)?;
 
         let mut net_sum = Decimal::new(0, 0);
@@ -437,7 +446,7 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
-    fn fast_sum_with_none(iterable: Bound<PyAny>, _py: Python) -> PyResult<Option<Self>> {
+    fn fast_sum_with_none(iterable: Bound<PyAny>) -> PyResult<Option<Self>> {
         let iterator = PyIterator::from_bound_object(&iterable)?;
 
         let mut net_sum: Decimal = Decimal::new(0, 0);
@@ -581,7 +590,7 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
-    fn from_json(dict: Option<Bound<PyAny>>, _py: Python) -> PyResult<Self> {
+    fn from_json(dict: Option<Bound<PyAny>>) -> PyResult<Self> {
         match json_to_money_vat(dict) {
             Ok(value) => Ok(value),
             Err(err) => Err(err),

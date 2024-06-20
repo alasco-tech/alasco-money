@@ -16,6 +16,6 @@ fn alasco_money(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Money>()?;
     m.add_class::<MoneyWithVAT>()?;
     m.add_class::<MoneyWithVATRatio>()?;
-    m.add_function(wrap_pyfunction!(sum_, m)?).unwrap();
+    m.add_function(wrap_pyfunction!(sum_, m)?)?;
     Ok(())
 }

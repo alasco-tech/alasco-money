@@ -306,7 +306,7 @@ impl Money {
 }
 
 #[pyfunction]
-pub fn sum_(elems: Vec<Option<Money>>, _py: Python) -> PyResult<Money> {
+pub fn sum_(elems: Vec<Option<Money>>) -> PyResult<Money> {
     let mut amount: Decimal = Decimal::new(0, 0);
 
     for item in elems {

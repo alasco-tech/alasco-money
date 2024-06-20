@@ -13,7 +13,7 @@ pub struct MoneyWithVATRatio {
 #[pymethods]
 impl MoneyWithVATRatio {
     #[new]
-    fn new(net_ratio: Decimal, gross_ratio: Decimal, _py: Python) -> Self {
+    fn new(net_ratio: Decimal, gross_ratio: Decimal) -> Self {
         Self {
             net_ratio,
             gross_ratio,
