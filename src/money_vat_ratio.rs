@@ -45,12 +45,48 @@ impl MoneyWithVATRatio {
         )
     }
 
+    fn __add__(&self, other: Self) -> Self {
+        Self {
+            net_ratio: self.net_ratio + other.net_ratio,
+            gross_ratio: self.gross_ratio + other.gross_ratio,
+        }
+    }
+
+    fn __sub__(&self, other: Self) -> Self {
+        Self {
+            net_ratio: self.net_ratio - other.net_ratio,
+            gross_ratio: self.gross_ratio - other.gross_ratio,
+        }
+    }
+
     fn __mul__(&self, other: f64) -> Self {
         let other_decimal = Decimal::from_f64(other).unwrap();
 
         Self {
             net_ratio: self.net_ratio * other_decimal,
             gross_ratio: self.gross_ratio * other_decimal,
+        }
+    }
+
+    fn __truediv__(&self, other: f64) -> PyResult<Self> {
+        let other_decimal = Decimal::from_f64(other).unwrap();
+
+        if other_decimal == Decimal::new(0, 0) {
+            Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                "Division by zero",
+            ))
+        } else {
+            Ok(Self {
+                net_ratio: self.net_ratio / other_decimal,
+                gross_ratio: self.gross_ratio / other_decimal,
+            })
+        }
+    }
+
+    fn __neg__(&self) -> Self {
+        Self {
+            net_ratio: -self.net_ratio,
+            gross_ratio: -self.gross_ratio,
         }
     }
 

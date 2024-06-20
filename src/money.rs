@@ -165,12 +165,25 @@ impl Money {
     fn __truediv__(&self, other: Bound<PyAny>) -> PyResult<PyObject> {
         Python::with_gil(|py| {
             if let Ok(other_money) = other.extract::<PyRef<Self>>() {
-                Ok((self.amount / other_money.amount).into_py(py))
-            } else if let Ok(i) = other.extract::<f64>() {
-                Ok(Self {
-                    amount: self.amount / Decimal::from_f64(i).unwrap(),
+                if other_money.amount == Decimal::new(0, 0) {
+                    Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                        "Division by zero",
+                    ))
+                } else {
+                    Ok((self.amount / other_money.amount).into_py(py))
                 }
-                .into_py(py))
+            } else if let Ok(i) = other.extract::<f64>() {
+                let other_decimal = Decimal::from_f64(i).unwrap();
+                if other_decimal == Decimal::new(0, 0) {
+                    Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                        "Division by zero",
+                    ))
+                } else {
+                    Ok(Self {
+                        amount: self.amount / other_decimal,
+                    }
+                    .into_py(py))
+                }
             } else {
                 Err(pyo3::exceptions::PyTypeError::new_err(
                     "Unsupported operand",
@@ -180,6 +193,12 @@ impl Money {
     }
 
     fn __rtruediv__(&self, other: Bound<PyAny>) -> PyResult<PyObject> {
+        if self.amount == Decimal::new(0, 0) {
+            return Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                "Division by zero",
+            ));
+        }
+
         Python::with_gil(|py| {
             if let Ok(other_money) = other.extract::<PyRef<Self>>() {
                 Ok((other_money.amount / self.amount).into_py(py))

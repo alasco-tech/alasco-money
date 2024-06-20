@@ -316,7 +316,7 @@ impl MoneyWithVAT {
 
     #[staticmethod]
     #[pyo3(signature = (*args))]
-    fn max(args: &Bound<PyTuple>) -> Option<Self> {
+    fn max(args: &Bound<PyTuple>) -> PyResult<Self> {
         let items = if args.len() == 1 {
             PyIterator::from_bound_object(&args.get_item(0).unwrap()).unwrap()
         } else {
@@ -345,7 +345,7 @@ impl MoneyWithVAT {
 
         if let Some(true_max_net) = max_net {
             if let Some(true_max_gross) = max_gross {
-                Some(MoneyWithVAT {
+                Ok(MoneyWithVAT {
                     net: Money {
                         amount: true_max_net,
                     },
@@ -354,10 +354,14 @@ impl MoneyWithVAT {
                     },
                 })
             } else {
-                None
+                Err(pyo3::exceptions::PyValueError::new_err(
+                    "Insufficient arguments",
+                ))
             }
         } else {
-            None
+            Err(pyo3::exceptions::PyValueError::new_err(
+                "Insufficient arguments",
+            ))
         }
     }
 
@@ -420,15 +424,19 @@ impl MoneyWithVAT {
     fn safe_ratio_decimal(
         dividend: Option<&Self>,
         divisor: Option<Decimal>,
-    ) -> Option<MoneyWithVATRatio> {
+    ) -> Option<MoneyWithVAT> {
         if let Some(true_dividend) = dividend {
             if let Some(true_divisor) = divisor {
                 if true_divisor == Decimal::new(0, 0) {
                     None
                 } else {
-                    Some(MoneyWithVATRatio {
-                        net_ratio: true_dividend.net.amount / true_divisor,
-                        gross_ratio: true_dividend.get_gross().amount / true_divisor,
+                    Some(MoneyWithVAT {
+                        net: Money {
+                            amount: true_dividend.net.amount / true_divisor,
+                        },
+                        tax: Money {
+                            amount: true_dividend.tax.amount / true_divisor,
+                        },
                     })
                 }
             } else {
