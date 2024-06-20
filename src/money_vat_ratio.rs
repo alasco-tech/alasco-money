@@ -68,22 +68,6 @@ impl MoneyWithVATRatio {
         _handler: Bound<PyAny>,
         py: Python,
     ) -> PyResult<PyObject> {
-        // {
-        //     "properties": {
-        //         "net_ratio": {
-        //             "title": "Net ratio",
-        //             "type": "string",
-        //             "example": "0.23",
-        //         },
-        //         "gross_ratio": {
-        //             "title": "Gross ratio",
-        //             "type": "string",
-        //             "example": "0.23",
-        //         },
-        //     },
-        //     "type": "object",
-        // }
-
         let net_ratio = PyDict::new_bound(py);
         net_ratio.set_item("title", "Net ratio")?;
         net_ratio.set_item("type", "string")?;
@@ -111,16 +95,6 @@ impl MoneyWithVATRatio {
         _handler: Bound<PyAny>,
         py: Python,
     ) -> PyResult<PyObject> {
-        // {
-        //     "type": "function-plain",
-        //     "function": {"type": "with-info", "function": lambda: None},
-        //     "serialization": {
-        //         "type": "function-plain",
-        //         "function": lambda: None,
-        //         "when_used": "json",
-        //     },
-        // }
-
         // Define validation function
         let validate_fn = PyCFunction::new_closure_bound(
             py,
@@ -148,23 +122,33 @@ impl MoneyWithVATRatio {
             },
         )?;
 
+        // Define serialization function
+        let serialize_fn = PyCFunction::new_closure_bound(
+            py,
+            None,
+            None,
+            |args: &Bound<PyTuple>, _: Option<&Bound<PyDict>>| -> PyResult<PyObject> {
+                if let Ok(money_with_vat_ratio) = args.get_item(0)?.extract::<Self>() {
+                    return money_with_vat_ratio.for_json();
+                }
+
+                Err(PyValueError::new_err("Validation error"))
+            },
+        )?;
+
         let function = PyDict::new_bound(py);
         function.set_item("type", "with-info")?;
         function.set_item("function", validate_fn)?;
 
-        let schema = PyDict::new_bound(py);
+        let serialization = PyDict::new_bound(py);
+        serialization.set_item("type", "function-plain")?;
+        serialization.set_item("when_used", "json")?;
+        serialization.set_item("function", serialize_fn)?;
 
+        let schema = PyDict::new_bound(py);
         schema.set_item("type", "function-plain")?;
         schema.set_item("function", function)?;
-
-        // // Define serialization function
-        // let serialize_fn = PyCFunction::new_closure(py, None,None  |args: &PyTuple| -> PyResult<PyObject> {
-        //     let obj = args.get_item(0)?;
-        //     let user: &User = obj.extract()?;
-        //     let serialized = format!("User(name: '{}', age: {})", user.name, user.age);
-        //     Ok(PyString::new(py, &serialized).into())
-        // })?;
-        // schema.set_item("serialize", serialize_fn)?;
+        schema.set_item("serialization", serialization)?;
 
         Ok(schema.into())
     }

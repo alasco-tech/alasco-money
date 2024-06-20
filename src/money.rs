@@ -230,8 +230,6 @@ impl Money {
         _handler: Bound<PyAny>,
         py: Python,
     ) -> PyResult<PyObject> {
-        // {"example": "123.123456789012", "type": "string"}
-
         let dict = PyDict::new_bound(py);
         dict.set_item("example", "123.123456789012")?;
         dict.set_item("type", "string")?;
@@ -245,16 +243,6 @@ impl Money {
         _handler: Bound<PyAny>,
         py: Python,
     ) -> PyResult<PyObject> {
-        // {
-        //     "type": "function-plain",
-        //     "function": {"type": "with-info", "function": lambda: None},
-        //     "serialization": {
-        //         "type": "function-plain",
-        //         "function": lambda: None,
-        //         "when_used": "json",
-        //     },
-        // }
-
         // Define validation function
         let validate_fn = PyCFunction::new_closure_bound(
             py,
@@ -271,23 +259,33 @@ impl Money {
             },
         )?;
 
+        // Define serialization function
+        let serialize_fn = PyCFunction::new_closure_bound(
+            py,
+            None,
+            None,
+            |args: &Bound<PyTuple>, _: Option<&Bound<PyDict>>| -> PyResult<String> {
+                if let Ok(money) = args.get_item(0)?.extract::<Self>() {
+                    return Ok(money.for_json());
+                }
+
+                Err(PyValueError::new_err("Validation error"))
+            },
+        )?;
+
         let function = PyDict::new_bound(py);
         function.set_item("type", "with-info")?;
         function.set_item("function", validate_fn)?;
 
-        let schema = PyDict::new_bound(py);
+        let serialization = PyDict::new_bound(py);
+        serialization.set_item("type", "function-plain")?;
+        serialization.set_item("when_used", "json")?;
+        serialization.set_item("function", serialize_fn)?;
 
+        let schema = PyDict::new_bound(py);
         schema.set_item("type", "function-plain")?;
         schema.set_item("function", function)?;
-
-        // // Define serialization function
-        // let serialize_fn = PyCFunction::new_closure(py, None,None  |args: &PyTuple| -> PyResult<PyObject> {
-        //     let obj = args.get_item(0)?;
-        //     let user: &User = obj.extract()?;
-        //     let serialized = format!("User(name: '{}', age: {})", user.name, user.age);
-        //     Ok(PyString::new(py, &serialized).into())
-        // })?;
-        // schema.set_item("serialize", serialize_fn)?;
+        schema.set_item("serialization", serialization)?;
 
         Ok(schema.into())
     }
