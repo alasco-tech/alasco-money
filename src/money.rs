@@ -7,7 +7,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-#[pyclass]
+#[pyclass(subclass)]
 #[derive(Debug, Clone)]
 pub struct Money {
     pub amount: Decimal,

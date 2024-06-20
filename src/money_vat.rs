@@ -13,7 +13,7 @@ use crate::money_vat_ratio::MoneyWithVATRatio;
 const GERMAN_VAT_RATES: [i16; 5] = [0, 5, 7, 16, 19];
 const KNOWN_VAT_RATES: [i16; 9] = [0, 5, 7, 10, 13, 16, 19, 20, 25];
 
-#[pyclass]
+#[pyclass(subclass)]
 #[derive(Debug, Clone)]
 pub struct MoneyWithVAT {
     pub net: Money,
