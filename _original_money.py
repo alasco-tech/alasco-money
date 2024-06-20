@@ -9,6 +9,7 @@ from typing import (
     overload,
 )
 
+import alasco.lib.currency as _currency
 import babel.core as _babel_core
 import babel.numbers as _babel_numbers
 import django.db.models as _django_models
@@ -17,12 +18,10 @@ import django_stubs_ext as _django_stubs
 import pydantic as _pydantic
 import pydantic.json_schema as _json_schema
 import pydantic_core.core_schema as _core_schema
-import structlog as _structlog
-from django.db.models import functions as _dj_model_functions
-
-import alasco.lib.currency as _currency
 import selina.common.field as _selina_fields
 import selina.cost_processing.forms.legacy_widgets as _selina_forms
+import structlog as _structlog
+from django.db.models import functions as _dj_model_functions
 
 logger = _structlog.get_logger(__name__)
 

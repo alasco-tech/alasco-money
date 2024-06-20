@@ -1,6 +1,6 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyCFunction, PyDict, PyTuple};
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use std::collections::hash_map::DefaultHasher;
@@ -282,10 +282,6 @@ impl MoneyWithVAT {
         self.get_gross().amount == other.get_gross().amount
     }
 
-    fn __ne__(&self, other: &Self) -> bool {
-        self.get_gross().amount != other.get_gross().amount
-    }
-
     fn __lt__(&self, other: &Self) -> bool {
         self.get_gross().amount < other.get_gross().amount
     }
@@ -460,17 +456,127 @@ impl MoneyWithVAT {
         }
     }
 
+    fn for_json(&self) -> PyResult<PyObject> {
+        Python::with_gil(|py| {
+            let dict = PyDict::new_bound(py);
+            dict.set_item("net", self.net.for_json())?;
+            dict.set_item("tax", self.tax.for_json())?;
+            Ok(dict.into())
+        })
+    }
+
+    #[staticmethod]
+    fn __get_pydantic_json_schema__(
+        _core_schema: Bound<PyAny>,
+        _handler: Bound<PyAny>,
+        py: Python,
+    ) -> PyResult<PyObject> {
+        // {
+        //     "properties": {
+        //         "net": {
+        //             "example": "123.123456789012",
+        //             "title": "Net amount",
+        //             "type": "string",
+        //         },
+        //         "tax": {
+        //             "example": "123.123456789012",
+        //             "title": "Tax amount",
+        //             "type": "string",
+        //         },
+        //     },
+        //     "type": "object",
+        // }
+
+        let net = PyDict::new_bound(py);
+        net.set_item("title", "Net amount")?;
+        net.set_item("type", "string")?;
+        net.set_item("example", "123.123456789012")?;
+
+        let tax = PyDict::new_bound(py);
+        tax.set_item("title", "Tax amount")?;
+        tax.set_item("type", "string")?;
+        tax.set_item("example", "123.123456789012")?;
+
+        let properties = PyDict::new_bound(py);
+        properties.set_item("net", net)?;
+        properties.set_item("tax", tax)?;
+
+        let dict = PyDict::new_bound(py);
+        dict.set_item("properties", properties)?;
+        dict.set_item("type", "object")?;
+
+        Ok(dict.into())
+    }
+
+    #[staticmethod]
+    fn __get_pydantic_core_schema__(
+        _source: Bound<PyAny>,
+        _handler: Bound<PyAny>,
+        py: Python,
+    ) -> PyResult<PyObject> {
+        // {
+        //     "type": "function-plain",
+        //     "function": {"type": "with-info", "function": lambda: None},
+        //     "serialization": {
+        //         "type": "function-plain",
+        //         "function": lambda: None,
+        //         "when_used": "json",
+        //     },
+        // }
+
+        // Define validation function
+        let validate_fn = PyCFunction::new_closure_bound(
+            py,
+            None,
+            None,
+            |args: &Bound<PyTuple>, _kwargs: Option<&Bound<PyDict>>| -> PyResult<Self> {
+                if let Ok(money_with_vat) = args.get_item(0)?.extract::<Self>() {
+                    return Ok(money_with_vat);
+                } else if let Ok(dict) = args.get_item(0)?.extract::<&PyDict>() {
+                    if let Ok(Some(net)) = dict.get_item("net") {
+                        if let Ok(Some(tax)) = dict.get_item("tax") {
+                            if let Ok(true_net) = net.extract::<Decimal>() {
+                                if let Ok(true_tax) = tax.extract::<Decimal>() {
+                                    return Ok(Self {
+                                        net: Money { amount: true_net },
+                                        tax: Money { amount: true_tax },
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Err(PyValueError::new_err("Validation error"))
+            },
+        )?;
+
+        let function = PyDict::new_bound(py);
+        function.set_item("type", "with-info")?;
+        function.set_item("function", validate_fn)?;
+
+        let schema = PyDict::new_bound(py);
+
+        schema.set_item("type", "function-plain")?;
+        schema.set_item("function", function)?;
+
+        // // Define serialization function
+        // let serialize_fn = PyCFunction::new_closure(py, None,None  |args: &PyTuple| -> PyResult<PyObject> {
+        //     let obj = args.get_item(0)?;
+        //     let user: &User = obj.extract()?;
+        //     let serialized = format!("User(name: '{}', age: {})", user.name, user.age);
+        //     Ok(PyString::new(py, &serialized).into())
+        // })?;
+        // schema.set_item("serialize", serialize_fn)?;
+
+        Ok(schema.into())
+    }
+
     #[staticmethod]
     fn from_json(dict: Option<Bound<PyAny>>, _py: Python) -> PyResult<Self> {
-        let result = std::panic::catch_unwind(|| json_to_money_vat(dict));
-
-        if result.is_err() {
-            Err(PyValueError::new_err("Invalid dict"))
-        } else {
-            match result.unwrap() {
-                Ok(money_vat) => Ok(money_vat),
-                Err(_) => Err(PyValueError::new_err("Invalid dict")),
-            }
+        match json_to_money_vat(dict) {
+            Ok(value) => Ok(value),
+            Err(err) => Err(err),
         }
     }
 

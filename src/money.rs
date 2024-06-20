@@ -1,6 +1,6 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyCFunction, PyDict, PyTuple};
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::{Decimal, RoundingStrategy};
 use std::collections::hash_map::DefaultHasher;
@@ -204,10 +204,6 @@ impl Money {
         self.amount == other.amount
     }
 
-    fn __ne__(&self, other: &Self) -> bool {
-        self.amount != other.amount
-    }
-
     fn __lt__(&self, other: &Self) -> bool {
         self.amount < other.amount
     }
@@ -222,6 +218,78 @@ impl Money {
 
     fn __ge__(&self, other: &Self) -> bool {
         self.amount >= other.amount
+    }
+
+    pub fn for_json(&self) -> String {
+        self.round(Some(12)).amount.to_string()
+    }
+
+    #[staticmethod]
+    fn __get_pydantic_json_schema__(
+        _core_schema: Bound<PyAny>,
+        _handler: Bound<PyAny>,
+        py: Python,
+    ) -> PyResult<PyObject> {
+        // {"example": "123.123456789012", "type": "string"}
+
+        let dict = PyDict::new_bound(py);
+        dict.set_item("example", "123.123456789012")?;
+        dict.set_item("type", "string")?;
+
+        Ok(dict.into())
+    }
+
+    #[staticmethod]
+    fn __get_pydantic_core_schema__(
+        _source: Bound<PyAny>,
+        _handler: Bound<PyAny>,
+        py: Python,
+    ) -> PyResult<PyObject> {
+        // {
+        //     "type": "function-plain",
+        //     "function": {"type": "with-info", "function": lambda: None},
+        //     "serialization": {
+        //         "type": "function-plain",
+        //         "function": lambda: None,
+        //         "when_used": "json",
+        //     },
+        // }
+
+        // Define validation function
+        let validate_fn = PyCFunction::new_closure_bound(
+            py,
+            None,
+            None,
+            |args: &Bound<PyTuple>, _: Option<&Bound<PyDict>>| -> PyResult<Self> {
+                if let Ok(money) = args.get_item(0)?.extract::<Self>() {
+                    return Ok(money);
+                } else if let Ok(decimal) = args.get_item(0)?.extract::<Decimal>() {
+                    return Ok(Money { amount: decimal });
+                }
+
+                Err(PyValueError::new_err("Validation error"))
+            },
+        )?;
+
+        let function = PyDict::new_bound(py);
+        function.set_item("type", "with-info")?;
+        function.set_item("function", validate_fn)?;
+
+        let schema = PyDict::new_bound(py);
+
+        schema.set_item("type", "function-plain")?;
+        schema.set_item("function", function)?;
+
+        // // Define serialization function
+        // let serialize_fn = PyCFunction::new_closure(py, None,None  |args: &PyTuple| -> PyResult<PyObject> {
+        //     let obj = args.get_item(0)?;
+        //     let user: &User = obj.extract()?;
+        //     let serialized = format!("User(name: '{}', age: {})", user.name, user.age);
+        //     Ok(PyString::new(py, &serialized).into())
+        // })?;
+        // schema.set_item("serialize", serialize_fn)?;
+
+        Ok(schema.into())
     }
 
     pub fn copy(&self) -> Self {
