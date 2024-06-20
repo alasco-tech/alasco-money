@@ -242,6 +242,25 @@ impl MoneyWithVAT {
         }
     }
 
+    fn __rtruediv__(&self, other: f64) -> PyResult<Self> {
+        let other_value = Decimal::from_f64(other).unwrap();
+
+        if self.net.amount == Decimal::new(0, 0) || self.tax.amount == Decimal::new(0, 0) {
+            Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                "Division by zero",
+            ))
+        } else {
+            Ok(Self {
+                net: Money {
+                    amount: other_value / self.net.amount,
+                },
+                tax: Money {
+                    amount: other_value / self.tax.amount,
+                },
+            })
+        }
+    }
+
     fn __neg__(&self) -> Self {
         Self {
             net: Money {

@@ -99,10 +99,9 @@ def test_div_by_non_Money():
 
 
 def test_rdiv_by_non_Money():
-    x = 2
-    y = Money(50)
-    with pytest.raises(TypeError):
-        assert x / y == Money(25)
+    x = 50
+    y = Money(2)
+    assert x / y == Money(25)
 
 
 def test_ne():
