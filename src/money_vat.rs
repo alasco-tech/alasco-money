@@ -154,6 +154,13 @@ impl MoneyWithVAT {
         };
     }
 
+    fn rounded_to_money_field_precision(&self) -> Self {
+        Self {
+            net: self.net.round(Some(12)),
+            tax: self.tax.round(Some(12)),
+        }
+    }
+
     fn __str__(&self) -> String {
         format!("{} {}", self.net.amount, self.tax.amount)
     }

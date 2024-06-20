@@ -69,6 +69,14 @@ impl MoneyWithVATRatio {
     }
 
     #[staticmethod]
+    fn zero() -> Self {
+        Self {
+            net_ratio: Decimal::new(0, 0),
+            gross_ratio: Decimal::new(0, 0),
+        }
+    }
+
+    #[staticmethod]
     fn __get_pydantic_json_schema__(
         _core_schema: Bound<PyAny>,
         _handler: Bound<PyAny>,
