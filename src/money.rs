@@ -7,6 +7,8 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
+pub const MONEY_PRECISION: Option<i32> = Some(12);
+
 #[pyclass(subclass)]
 #[derive(Debug, Clone)]
 pub struct Money {
@@ -232,7 +234,7 @@ impl Money {
     }
 
     pub fn for_json(&self) -> String {
-        self.round(Some(12)).amount.to_string()
+        self.round(MONEY_PRECISION).amount.to_string()
     }
 
     #[staticmethod]

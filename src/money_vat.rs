@@ -8,6 +8,7 @@ use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use crate::money::Money;
+use crate::money::MONEY_PRECISION;
 use crate::money_vat_ratio::MoneyWithVATRatio;
 
 const GERMAN_VAT_RATES: [i16; 5] = [0, 5, 7, 16, 19];
@@ -156,8 +157,8 @@ impl MoneyWithVAT {
 
     fn rounded_to_money_field_precision(&self) -> Self {
         Self {
-            net: self.net.round(Some(12)),
-            tax: self.tax.round(Some(12)),
+            net: self.net.round(MONEY_PRECISION),
+            tax: self.tax.round(MONEY_PRECISION),
         }
     }
 
