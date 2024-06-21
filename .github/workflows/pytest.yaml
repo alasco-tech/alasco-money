@@ -3,7 +3,7 @@ name: Test Rust Python Integration
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
   workflow_dispatch:
 
