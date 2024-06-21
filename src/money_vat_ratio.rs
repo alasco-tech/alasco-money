@@ -4,6 +4,8 @@ use pyo3::types::{PyCFunction, PyDict, PyTuple};
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 
+use crate::money::get_decimal;
+
 #[pyclass]
 #[derive(Debug, Clone)]
 pub struct MoneyWithVATRatio {
@@ -14,14 +16,20 @@ pub struct MoneyWithVATRatio {
 #[pymethods]
 impl MoneyWithVATRatio {
     #[new]
-    fn new(net_ratio: f64, gross_ratio: f64) -> Self {
-        let net_ratio_decimal = Decimal::from_f64(net_ratio).unwrap();
-        let gross_ratio_decimal = Decimal::from_f64(gross_ratio).unwrap();
+    fn new(net_ratio: Bound<PyAny>, gross_ratio: Bound<PyAny>) -> PyResult<Self> {
+        let net_ratio_decimal = match get_decimal(net_ratio) {
+            Ok(decimal) => decimal,
+            Err(_) => return Err(PyValueError::new_err("Invalid decimal")),
+        };
+        let gross_ratio_decimal = match get_decimal(gross_ratio) {
+            Ok(decimal) => decimal,
+            Err(_) => return Err(PyValueError::new_err("Invalid decimal")),
+        };
 
-        Self {
+        Ok(Self {
             net_ratio: net_ratio_decimal,
             gross_ratio: gross_ratio_decimal,
-        }
+        })
     }
 
     #[getter(net_ratio)]
@@ -68,18 +76,22 @@ impl MoneyWithVATRatio {
         }
     }
 
-    fn __truediv__(&self, other: f64) -> PyResult<Self> {
-        let other_decimal = Decimal::from_f64(other).unwrap();
-
-        if other_decimal == Decimal::new(0, 0) {
-            Err(pyo3::exceptions::PyZeroDivisionError::new_err(
-                "Division by zero",
-            ))
+    fn __truediv__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        if let Ok(other_decimal) = get_decimal(other) {
+            if other_decimal == Decimal::new(0, 0) {
+                Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                    "Division by zero",
+                ))
+            } else {
+                Ok(Self {
+                    net_ratio: self.net_ratio / other_decimal,
+                    gross_ratio: self.gross_ratio / other_decimal,
+                })
+            }
         } else {
-            Ok(Self {
-                net_ratio: self.net_ratio / other_decimal,
-                gross_ratio: self.gross_ratio / other_decimal,
-            })
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "Unsupported operand",
+            ))
         }
     }
 

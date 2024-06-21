@@ -1,12 +1,12 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyCFunction, PyDict, PyIterator, PyTuple};
-use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
+use crate::money::get_decimal;
 use crate::money::Money;
 use crate::money::MONEY_PRECISION;
 use crate::money_vat_ratio::MoneyWithVATRatio;
@@ -26,18 +26,15 @@ impl MoneyWithVAT {
     #[new]
     fn new(net: Option<Bound<PyAny>>, tax: Option<Bound<PyAny>>) -> PyResult<Self> {
         let net_money = if let Some(net_obj) = net {
-            if let Ok(money) = net_obj.extract::<PyRef<Money>>() {
+            if let Ok(money) = net_obj.extract::<Money>() {
                 money.clone()
             } else if let Ok(s) = net_obj.extract::<&str>() {
-                let amount = Decimal::from_str(s)
-                    .map_err(|_| PyValueError::new_err("Invalid decimal string"))?;
-                Money { amount }
-            } else if let Ok(amount) = net_obj.extract::<Decimal>() {
-                Money { amount }
-            } else if let Ok(f) = net_obj.extract::<f64>() {
-                Money {
-                    amount: Decimal::from_f64(f).unwrap(),
+                match Decimal::from_str(s) {
+                    Ok(decimal) => Money { amount: decimal },
+                    Err(_) => return Err(PyValueError::new_err("Invalid decimal")),
                 }
+            } else if let Ok(amount) = get_decimal(net_obj) {
+                Money { amount }
             } else {
                 Money {
                     amount: Decimal::new(0, 0),
@@ -50,18 +47,15 @@ impl MoneyWithVAT {
         };
 
         let tax_money = if let Some(tax_obj) = tax {
-            if let Ok(money) = tax_obj.extract::<PyRef<Money>>() {
+            if let Ok(money) = tax_obj.extract::<Money>() {
                 money.clone()
             } else if let Ok(s) = tax_obj.extract::<&str>() {
-                let amount = Decimal::from_str(s)
-                    .map_err(|_| PyValueError::new_err("Invalid decimal string"))?;
-                Money { amount }
-            } else if let Ok(amount) = tax_obj.extract::<Decimal>() {
-                Money { amount }
-            } else if let Ok(f) = tax_obj.extract::<f64>() {
-                Money {
-                    amount: Decimal::from_f64(f).unwrap(),
+                match Decimal::from_str(s) {
+                    Ok(decimal) => Money { amount: decimal },
+                    Err(_) => return Err(PyValueError::new_err("Invalid decimal")),
                 }
+            } else if let Ok(amount) = get_decimal(tax_obj) {
+                Money { amount }
             } else {
                 Money {
                     amount: Decimal::new(0, 0),
@@ -184,7 +178,7 @@ impl MoneyWithVAT {
     }
 
     fn __add__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(other_money_with_vat) = other.extract::<PyRef<Self>>() {
+        if let Ok(other_money_with_vat) = other.extract::<Self>() {
             Ok(Self {
                 net: Money {
                     amount: self.net.amount + other_money_with_vat.net.amount,
@@ -193,11 +187,10 @@ impl MoneyWithVAT {
                     amount: self.tax.amount + other_money_with_vat.tax.amount,
                 },
             })
-        } else if let Ok(i) = other.extract::<f64>() {
-            let other_value = Decimal::from_f64(i).unwrap();
+        } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
                 net: Money {
-                    amount: self.net.amount + other_value,
+                    amount: self.net.amount + other_decimal,
                 },
                 tax: self.tax.clone(),
             })
@@ -213,7 +206,7 @@ impl MoneyWithVAT {
     }
 
     fn __sub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(other_money_with_vat) = other.extract::<PyRef<Self>>() {
+        if let Ok(other_money_with_vat) = other.extract::<Self>() {
             Ok(Self {
                 net: Money {
                     amount: self.net.amount - other_money_with_vat.net.amount,
@@ -222,11 +215,10 @@ impl MoneyWithVAT {
                     amount: self.tax.amount - other_money_with_vat.tax.amount,
                 },
             })
-        } else if let Ok(i) = other.extract::<f64>() {
-            let other_value = Decimal::from_f64(i).unwrap();
+        } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
                 net: Money {
-                    amount: self.net.amount - other_value,
+                    amount: self.net.amount - other_decimal,
                 },
                 tax: self.tax.clone(),
             })
@@ -238,7 +230,7 @@ impl MoneyWithVAT {
     }
 
     fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(other_ratio) = other.extract::<PyRef<MoneyWithVATRatio>>() {
+        if let Ok(other_ratio) = other.extract::<MoneyWithVATRatio>() {
             let net_value = other_ratio.net_ratio * self.net.amount;
             Ok(Self {
                 net: Money { amount: net_value },
@@ -246,14 +238,13 @@ impl MoneyWithVAT {
                     amount: other_ratio.gross_ratio * self.get_gross().amount - net_value,
                 },
             })
-        } else if let Ok(i) = other.extract::<f64>() {
-            let other_value = Decimal::from_f64(i).unwrap();
+        } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
                 net: Money {
-                    amount: self.net.amount * other_value,
+                    amount: self.net.amount * other_decimal,
                 },
                 tax: Money {
-                    amount: self.tax.amount * other_value,
+                    amount: self.tax.amount * other_decimal,
                 },
             })
         } else {
@@ -267,27 +258,33 @@ impl MoneyWithVAT {
         self.__mul__(other)
     }
 
-    fn __truediv__(&self, other: f64) -> PyResult<Self> {
-        let other_value = Decimal::from_f64(other).unwrap();
+    fn __truediv__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        let other_decimal = match get_decimal(other) {
+            Ok(decimal) => decimal,
+            Err(_) => return Err(pyo3::exceptions::PyTypeError::new_err("Invalid decimal")),
+        };
 
-        if other_value == Decimal::new(0, 0) {
+        if other_decimal == Decimal::new(0, 0) {
             Err(pyo3::exceptions::PyZeroDivisionError::new_err(
                 "Division by zero",
             ))
         } else {
             Ok(Self {
                 net: Money {
-                    amount: self.net.amount / other_value,
+                    amount: self.net.amount / other_decimal,
                 },
                 tax: Money {
-                    amount: self.tax.amount / other_value,
+                    amount: self.tax.amount / other_decimal,
                 },
             })
         }
     }
 
-    fn __rtruediv__(&self, other: f64) -> PyResult<Self> {
-        let other_value = Decimal::from_f64(other).unwrap();
+    fn __rtruediv__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        let other_decimal = match get_decimal(other) {
+            Ok(decimal) => decimal,
+            Err(_) => return Err(pyo3::exceptions::PyTypeError::new_err("Invalid decimal")),
+        };
 
         if self.net.amount == Decimal::new(0, 0) || self.tax.amount == Decimal::new(0, 0) {
             Err(pyo3::exceptions::PyZeroDivisionError::new_err(
@@ -296,10 +293,10 @@ impl MoneyWithVAT {
         } else {
             Ok(Self {
                 net: Money {
-                    amount: other_value / self.net.amount,
+                    amount: other_decimal / self.net.amount,
                 },
                 tax: Money {
-                    amount: other_value / self.tax.amount,
+                    amount: other_decimal / self.tax.amount,
                 },
             })
         }

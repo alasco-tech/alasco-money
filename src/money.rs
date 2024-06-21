@@ -20,23 +20,19 @@ impl Money {
     #[new]
     fn new(amount: Option<Bound<PyAny>>) -> PyResult<Self> {
         if let Some(obj) = amount {
-            if let Ok(money) = obj.extract::<PyRef<Self>>() {
+            if let Ok(money) = obj.extract::<Self>() {
                 Ok(Self {
                     amount: money.amount.clone(),
                 })
             } else if let Ok(s) = obj.extract::<&str>() {
                 match Decimal::from_str(s) {
                     Ok(decimal) => Ok(Self { amount: decimal }),
-                    Err(_) => Err(PyValueError::new_err("Invalid decimal string")),
+                    Err(_) => Err(PyValueError::new_err("Invalid decimal")),
                 }
-            } else if let Ok(amount) = obj.extract::<Decimal>() {
-                Ok(Self { amount })
-            } else if let Ok(f) = obj.extract::<f64>() {
-                Ok(Self {
-                    amount: Decimal::from_f64(f).unwrap(),
-                })
+            } else if let Ok(decimal) = get_decimal(obj) {
+                Ok(Self { amount: decimal })
             } else {
-                Err(PyValueError::new_err("Invalid type for amount"))
+                Err(PyValueError::new_err("Invalid type"))
             }
         } else {
             Ok(Self {
@@ -85,12 +81,11 @@ impl Money {
     }
 
     fn __add__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+        if let Ok(other_money) = other.extract::<Self>() {
             Ok(Self {
                 amount: self.amount + other_money.amount,
             })
-        } else if let Ok(i) = other.extract::<f64>() {
-            let other_decimal = Decimal::from_f64(i).unwrap();
+        } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
                 amount: self.amount + other_decimal,
             })
@@ -106,12 +101,11 @@ impl Money {
     }
 
     fn __sub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+        if let Ok(other_money) = other.extract::<Self>() {
             Ok(Self {
                 amount: self.amount - other_money.amount,
             })
-        } else if let Ok(i) = other.extract::<f64>() {
-            let other_decimal = Decimal::from_f64(i).unwrap();
+        } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
                 amount: self.amount - other_decimal,
             })
@@ -127,9 +121,9 @@ impl Money {
     }
 
     fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(i) = other.extract::<f64>() {
+        if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
-                amount: self.amount * Decimal::from_f64(i).unwrap(),
+                amount: self.amount * other_decimal,
             })
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
@@ -144,7 +138,7 @@ impl Money {
 
     fn __truediv__(&self, other: Bound<PyAny>) -> PyResult<PyObject> {
         Python::with_gil(|py| {
-            if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+            if let Ok(other_money) = other.extract::<Self>() {
                 if other_money.amount == Decimal::new(0, 0) {
                     Err(pyo3::exceptions::PyZeroDivisionError::new_err(
                         "Division by zero",
@@ -152,8 +146,7 @@ impl Money {
                 } else {
                     Ok((self.amount / other_money.amount).into_py(py))
                 }
-            } else if let Ok(i) = other.extract::<f64>() {
-                let other_decimal = Decimal::from_f64(i).unwrap();
+            } else if let Ok(other_decimal) = get_decimal(other) {
                 if other_decimal == Decimal::new(0, 0) {
                     Err(pyo3::exceptions::PyZeroDivisionError::new_err(
                         "Division by zero",
@@ -180,11 +173,11 @@ impl Money {
         }
 
         Python::with_gil(|py| {
-            if let Ok(other_money) = other.extract::<PyRef<Self>>() {
+            if let Ok(other_money) = other.extract::<Self>() {
                 Ok((other_money.amount / self.amount).into_py(py))
-            } else if let Ok(i) = other.extract::<f64>() {
+            } else if let Ok(other_decimal) = get_decimal(other) {
                 Ok(Self {
-                    amount: Decimal::from_f64(i).unwrap() / self.amount,
+                    amount: other_decimal / self.amount,
                 }
                 .into_py(py))
             } else {
@@ -352,4 +345,16 @@ fn round_with_negative_scale(value: Decimal, scale: i32, round_up: bool) -> Deci
 
     let factor = Decimal::new(10_i64.pow((-scale) as u32), 0);
     (value / factor).round() * factor
+}
+
+pub fn get_decimal(obj: Bound<PyAny>) -> PyResult<Decimal> {
+    if let Ok(_) = obj.extract::<Money>() {
+        Err(PyValueError::new_err("Invalid decimal"))
+    } else if let Ok(amount) = obj.extract::<Decimal>() {
+        Ok(amount)
+    } else if let Ok(f) = obj.extract::<f64>() {
+        Ok(Decimal::from_f64(f).unwrap())
+    } else {
+        Err(PyValueError::new_err("Invalid decimal"))
+    }
 }
