@@ -11,6 +11,10 @@ import pytest as _pytest
             [_money.Money(100), _money.Money(200), _money.Money(0), None],
             _money.Money(300),
         ),
+        (
+            (x for x in [_money.Money(1), None]),
+            _money.Money(1),
+        ),
     ],
 )
 def test_sum_(operands, expected):

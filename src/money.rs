@@ -1,6 +1,6 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::{PyCFunction, PyDict, PyTuple};
+use pyo3::types::{PyCFunction, PyDict, PyIterator, PyTuple};
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::{Decimal, RoundingStrategy};
 use std::collections::hash_map::DefaultHasher;
@@ -320,12 +320,15 @@ impl Money {
 }
 
 #[pyfunction]
-pub fn sum_(elems: Vec<Option<Money>>) -> PyResult<Money> {
+pub fn sum_(elems: Bound<PyAny>) -> PyResult<Money> {
+    let iterator = PyIterator::from_bound_object(&elems)?;
     let mut amount: Decimal = Decimal::new(0, 0);
 
-    for item in elems {
-        if let Some(value) = item {
-            amount += value.amount;
+    for elem in iterator {
+        if let Ok(item) = elem {
+            if let Ok(Some(value)) = item.extract::<Option<Money>>() {
+                amount += value.amount;
+            }
         }
     }
 
