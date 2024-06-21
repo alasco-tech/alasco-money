@@ -18,18 +18,20 @@ pub struct Money {
 #[pymethods]
 impl Money {
     #[new]
-    fn new(amount: Option<PyObject>, py: Python) -> PyResult<Self> {
+    fn new(amount: Option<Bound<PyAny>>) -> PyResult<Self> {
         if let Some(obj) = amount {
-            if let Ok(money) = obj.extract::<PyRef<Self>>(py) {
+            if let Ok(money) = obj.extract::<PyRef<Self>>() {
                 Ok(Self {
                     amount: money.amount.clone(),
                 })
-            } else if let Ok(s) = obj.extract::<&str>(py) {
+            } else if let Ok(s) = obj.extract::<&str>() {
                 match Decimal::from_str(s) {
                     Ok(decimal) => Ok(Self { amount: decimal }),
                     Err(_) => Err(PyValueError::new_err("Invalid decimal string")),
                 }
-            } else if let Ok(f) = obj.extract::<f64>(py) {
+            } else if let Ok(amount) = obj.extract::<Decimal>() {
+                Ok(Self { amount })
+            } else if let Ok(f) = obj.extract::<f64>() {
                 Ok(Self {
                     amount: Decimal::from_f64(f).unwrap(),
                 })

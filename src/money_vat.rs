@@ -24,18 +24,20 @@ pub struct MoneyWithVAT {
 #[pymethods]
 impl MoneyWithVAT {
     #[new]
-    fn new(net: Option<PyObject>, tax: Option<PyObject>, py: Python) -> PyResult<Self> {
+    fn new(net: Option<Bound<PyAny>>, tax: Option<Bound<PyAny>>) -> PyResult<Self> {
         let net_money = if let Some(net_obj) = net {
-            if let Ok(money) = net_obj.extract::<PyRef<Money>>(py) {
+            if let Ok(money) = net_obj.extract::<PyRef<Money>>() {
                 money.clone()
-            } else if let Ok(s) = net_obj.extract::<&str>(py) {
+            } else if let Ok(s) = net_obj.extract::<&str>() {
                 let amount = Decimal::from_str(s)
                     .map_err(|_| PyValueError::new_err("Invalid decimal string"))?;
                 Money { amount }
-            } else if let Ok(f) = net_obj.extract::<f64>(py) {
-                let amount =
-                    Decimal::from_f64(f).ok_or_else(|| PyValueError::new_err("Invalid float"))?;
+            } else if let Ok(amount) = net_obj.extract::<Decimal>() {
                 Money { amount }
+            } else if let Ok(f) = net_obj.extract::<f64>() {
+                Money {
+                    amount: Decimal::from_f64(f).unwrap(),
+                }
             } else {
                 Money {
                     amount: Decimal::new(0, 0),
@@ -48,16 +50,18 @@ impl MoneyWithVAT {
         };
 
         let tax_money = if let Some(tax_obj) = tax {
-            if let Ok(money) = tax_obj.extract::<PyRef<Money>>(py) {
+            if let Ok(money) = tax_obj.extract::<PyRef<Money>>() {
                 money.clone()
-            } else if let Ok(s) = tax_obj.extract::<&str>(py) {
+            } else if let Ok(s) = tax_obj.extract::<&str>() {
                 let amount = Decimal::from_str(s)
                     .map_err(|_| PyValueError::new_err("Invalid decimal string"))?;
                 Money { amount }
-            } else if let Ok(f) = tax_obj.extract::<f64>(py) {
-                let amount =
-                    Decimal::from_f64(f).ok_or_else(|| PyValueError::new_err("Invalid float"))?;
+            } else if let Ok(amount) = tax_obj.extract::<Decimal>() {
                 Money { amount }
+            } else if let Ok(f) = tax_obj.extract::<f64>() {
+                Money {
+                    amount: Decimal::from_f64(f).unwrap(),
+                }
             } else {
                 Money {
                     amount: Decimal::new(0, 0),
