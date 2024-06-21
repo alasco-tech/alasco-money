@@ -178,25 +178,57 @@ impl MoneyWithVAT {
         hasher.finish()
     }
 
-    fn __add__(&self, other: Self) -> Self {
-        Self {
-            net: Money {
-                amount: self.net.amount + other.net.amount,
-            },
-            tax: Money {
-                amount: self.tax.amount + other.tax.amount,
-            },
+    fn __add__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        if let Ok(other_money_with_vat) = other.extract::<PyRef<Self>>() {
+            Ok(Self {
+                net: Money {
+                    amount: self.net.amount + other_money_with_vat.net.amount,
+                },
+                tax: Money {
+                    amount: self.tax.amount + other_money_with_vat.tax.amount,
+                },
+            })
+        } else if let Ok(i) = other.extract::<f64>() {
+            let other_value = Decimal::from_f64(i).unwrap();
+            Ok(Self {
+                net: Money {
+                    amount: self.net.amount + other_value,
+                },
+                tax: self.tax.clone(),
+            })
+        } else {
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "Unsupported operand",
+            ))
         }
     }
 
-    fn __sub__(&self, other: Self) -> Self {
-        Self {
-            net: Money {
-                amount: self.net.amount - other.net.amount,
-            },
-            tax: Money {
-                amount: self.tax.amount - other.tax.amount,
-            },
+    fn __radd__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        self.__add__(other)
+    }
+
+    fn __sub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        if let Ok(other_money_with_vat) = other.extract::<PyRef<Self>>() {
+            Ok(Self {
+                net: Money {
+                    amount: self.net.amount - other_money_with_vat.net.amount,
+                },
+                tax: Money {
+                    amount: self.tax.amount - other_money_with_vat.tax.amount,
+                },
+            })
+        } else if let Ok(i) = other.extract::<f64>() {
+            let other_value = Decimal::from_f64(i).unwrap();
+            Ok(Self {
+                net: Money {
+                    amount: self.net.amount - other_value,
+                },
+                tax: self.tax.clone(),
+            })
+        } else {
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "Unsupported operand",
+            ))
         }
     }
 
