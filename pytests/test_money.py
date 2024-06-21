@@ -55,7 +55,7 @@ def test_add():
 
 def test_add_non_money():
     with pytest.raises(TypeError):
-        Money(1000) + 123
+        Money(1000) + "123"
 
 
 def test_sub():
@@ -65,13 +65,13 @@ def test_sub():
 
 def test_sub_non_money():
     with pytest.raises(TypeError):
-        Money(1000) - 123
+        Money(1000) - "123"
 
 
 def test_rsub_non_money():
     assert 0 - Money(1) == Money(-1)
     with pytest.raises(TypeError):
-        assert 1 - Money(3) == Money(-2)
+        assert "123" - Money(3) == Money(-2)
 
 
 def test_mul():

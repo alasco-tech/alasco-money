@@ -178,7 +178,7 @@ impl MoneyWithVAT {
         hasher.finish()
     }
 
-    fn __add__(&self, other: &Self) -> Self {
+    fn __add__(&self, other: Self) -> Self {
         Self {
             net: Money {
                 amount: self.net.amount + other.net.amount,
@@ -189,7 +189,7 @@ impl MoneyWithVAT {
         }
     }
 
-    fn __sub__(&self, other: &Self) -> Self {
+    fn __sub__(&self, other: Self) -> Self {
         Self {
             net: Money {
                 amount: self.net.amount - other.net.amount,
@@ -271,10 +271,18 @@ impl MoneyWithVAT {
     fn __neg__(&self) -> Self {
         Self {
             net: Money {
-                amount: -self.net.amount,
+                amount: if self.net.amount != Decimal::new(0, 0) {
+                    -self.net.amount
+                } else {
+                    self.net.amount
+                },
             },
             tax: Money {
-                amount: -self.tax.amount,
+                amount: if self.tax.amount != Decimal::new(0, 0) {
+                    -self.tax.amount
+                } else {
+                    self.tax.amount
+                },
             },
         }
     }
@@ -294,23 +302,23 @@ impl MoneyWithVAT {
         !self.net.amount.is_zero() || !self.tax.amount.is_zero()
     }
 
-    fn __eq__(&self, other: &Self) -> bool {
+    fn __eq__(&self, other: Self) -> bool {
         self.get_gross().amount == other.get_gross().amount
     }
 
-    fn __lt__(&self, other: &Self) -> bool {
+    fn __lt__(&self, other: Self) -> bool {
         self.get_gross().amount < other.get_gross().amount
     }
 
-    fn __le__(&self, other: &Self) -> bool {
+    fn __le__(&self, other: Self) -> bool {
         self.get_gross().amount <= other.get_gross().amount
     }
 
-    fn __gt__(&self, other: &Self) -> bool {
+    fn __gt__(&self, other: Self) -> bool {
         self.get_gross().amount > other.get_gross().amount
     }
 
-    fn __ge__(&self, other: &Self) -> bool {
+    fn __ge__(&self, other: Self) -> bool {
         self.get_gross().amount >= other.get_gross().amount
     }
 
@@ -366,7 +374,7 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
-    fn ratio(dividend: &Self, divisor: &Self) -> PyResult<MoneyWithVATRatio> {
+    fn ratio(dividend: Self, divisor: Self) -> PyResult<MoneyWithVATRatio> {
         if divisor.net.amount == Decimal::new(0, 0)
             || divisor.get_gross().amount == Decimal::new(0, 0)
         {
@@ -382,7 +390,7 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
-    fn safe_ratio(dividend: Option<&Self>, divisor: Option<&Self>) -> Option<MoneyWithVATRatio> {
+    fn safe_ratio(dividend: Option<Self>, divisor: Option<Self>) -> Option<MoneyWithVATRatio> {
         let fixed_dividend = if let Some(true_dividend) = dividend {
             true_dividend.rounded_to_cents()
         } else {
@@ -422,7 +430,7 @@ impl MoneyWithVAT {
 
     #[staticmethod]
     fn safe_ratio_decimal(
-        dividend: Option<&Self>,
+        dividend: Option<Self>,
         divisor: Option<Decimal>,
     ) -> Option<MoneyWithVAT> {
         if let Some(true_dividend) = dividend {

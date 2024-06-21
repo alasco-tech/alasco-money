@@ -85,14 +85,11 @@ impl Money {
             Ok(Self {
                 amount: self.amount + other_money.amount,
             })
-        } else if let Ok(i) = other.extract::<i32>() {
-            if i == 0 {
-                Ok(self.clone())
-            } else {
-                Err(pyo3::exceptions::PyTypeError::new_err(
-                    "Unsupported operand",
-                ))
-            }
+        } else if let Ok(i) = other.extract::<f64>() {
+            let other_decimal = Decimal::from_f64(i).unwrap();
+            Ok(Self {
+                amount: self.amount + other_decimal,
+            })
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Unsupported operand",
@@ -109,14 +106,11 @@ impl Money {
             Ok(Self {
                 amount: self.amount - other_money.amount,
             })
-        } else if let Ok(i) = other.extract::<i32>() {
-            if i == 0 {
-                Ok(self.clone())
-            } else {
-                Err(pyo3::exceptions::PyTypeError::new_err(
-                    "Unsupported operand",
-                ))
-            }
+        } else if let Ok(i) = other.extract::<f64>() {
+            let other_decimal = Decimal::from_f64(i).unwrap();
+            Ok(Self {
+                amount: self.amount - other_decimal,
+            })
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Unsupported operand",
@@ -125,25 +119,7 @@ impl Money {
     }
 
     fn __rsub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(other_money) = other.extract::<PyRef<Self>>() {
-            Ok(Self {
-                amount: other_money.amount - self.amount,
-            })
-        } else if let Ok(i) = other.extract::<i32>() {
-            if i == 0 {
-                Ok(Self {
-                    amount: -self.amount,
-                })
-            } else {
-                Err(pyo3::exceptions::PyTypeError::new_err(
-                    "Unsupported operand",
-                ))
-            }
-        } else {
-            Err(pyo3::exceptions::PyTypeError::new_err(
-                "Unsupported operand",
-            ))
-        }
+        self.__neg__().__add__(other)
     }
 
     fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
@@ -217,7 +193,11 @@ impl Money {
 
     fn __neg__(&self) -> Self {
         Self {
-            amount: -self.amount,
+            amount: if self.amount != Decimal::new(0, 0) {
+                -self.amount
+            } else {
+                self.amount
+            },
         }
     }
 
@@ -231,23 +211,23 @@ impl Money {
         !self.amount.is_zero()
     }
 
-    fn __eq__(&self, other: &Self) -> bool {
+    fn __eq__(&self, other: Self) -> bool {
         self.amount == other.amount
     }
 
-    fn __lt__(&self, other: &Self) -> bool {
+    fn __lt__(&self, other: Self) -> bool {
         self.amount < other.amount
     }
 
-    fn __le__(&self, other: &Self) -> bool {
+    fn __le__(&self, other: Self) -> bool {
         self.amount <= other.amount
     }
 
-    fn __gt__(&self, other: &Self) -> bool {
+    fn __gt__(&self, other: Self) -> bool {
         self.amount > other.amount
     }
 
-    fn __ge__(&self, other: &Self) -> bool {
+    fn __ge__(&self, other: Self) -> bool {
         self.amount >= other.amount
     }
 
