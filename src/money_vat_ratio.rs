@@ -5,6 +5,7 @@ use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 
 use crate::money::get_decimal;
+use crate::traits::*;
 
 #[pyclass]
 #[derive(Debug, Clone)]
@@ -227,16 +228,18 @@ impl MoneyWithVATRatio {
 
         Ok(schema.into())
     }
+}
 
-    pub fn copy(&self) -> Self {
+impl Copyable for MoneyWithVATRatio {
+    fn copy(&self) -> Self {
         self.clone()
     }
 
-    pub fn __copy__(&self) -> Self {
+    fn __copy__(&self) -> Self {
         self.clone()
     }
 
-    pub fn __deepcopy__(&self, _memo: Bound<PyDict>) -> Self {
+    fn __deepcopy__(&self, _memo: Bound<PyDict>) -> Self {
         self.clone()
     }
 }

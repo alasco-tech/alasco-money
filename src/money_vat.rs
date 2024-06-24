@@ -12,6 +12,8 @@ use crate::money::Money;
 use crate::money::MONEY_PRECISION;
 use crate::money_vat_ratio::MoneyWithVATRatio;
 
+use crate::traits::*;
+
 const GERMAN_VAT_RATES: [i16; 5] = [0, 5, 7, 16, 19];
 const KNOWN_VAT_RATES: [i16; 9] = [0, 5, 7, 10, 13, 16, 19, 20, 25];
 
@@ -637,18 +639,6 @@ impl MoneyWithVAT {
         }
     }
 
-    pub fn copy(&self) -> Self {
-        self.clone()
-    }
-
-    pub fn __copy__(&self) -> Self {
-        self.clone()
-    }
-
-    pub fn __deepcopy__(&self, _memo: Bound<PyDict>) -> Self {
-        self.clone()
-    }
-
     #[staticmethod]
     fn german_vat_rates() -> [Decimal; 5] {
         GERMAN_VAT_RATES.map(|n| Decimal::new(n as i64, 2))
@@ -657,6 +647,20 @@ impl MoneyWithVAT {
     #[staticmethod]
     fn known_vat_rates() -> [Decimal; 9] {
         KNOWN_VAT_RATES.map(|n| Decimal::new(n as i64, 2))
+    }
+}
+
+impl Copyable for MoneyWithVAT {
+    fn copy(&self) -> Self {
+        self.clone()
+    }
+
+    fn __copy__(&self) -> Self {
+        self.clone()
+    }
+
+    fn __deepcopy__(&self, _memo: Bound<PyDict>) -> Self {
+        self.clone()
     }
 }
 

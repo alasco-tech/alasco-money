@@ -1,6 +1,7 @@
 mod money;
 mod money_vat;
 mod money_vat_ratio;
+mod traits;
 
 use env_logger;
 use pyo3::prelude::*;
