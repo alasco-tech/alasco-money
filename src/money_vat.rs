@@ -1,3 +1,4 @@
+use pyo3::basic::CompareOp;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyCFunction, PyDict, PyIterator, PyTuple};
@@ -177,6 +178,36 @@ impl MoneyWithVAT {
         hasher.finish()
     }
 
+    fn __neg__(&self) -> Self {
+        Self {
+            net: Money {
+                amount: if self.net.amount != Decimal::new(0, 0) {
+                    -self.net.amount
+                } else {
+                    self.net.amount
+                },
+            },
+            tax: Money {
+                amount: if self.tax.amount != Decimal::new(0, 0) {
+                    -self.tax.amount
+                } else {
+                    self.tax.amount
+                },
+            },
+        }
+    }
+
+    fn __abs__(&self) -> Self {
+        Self {
+            net: Money {
+                amount: self.net.amount.abs(),
+            },
+            tax: Money {
+                amount: self.tax.amount.abs(),
+            },
+        }
+    }
+
     fn __add__(&self, other: Bound<PyAny>) -> PyResult<Self> {
         if let Ok(other_money_with_vat) = other.extract::<Self>() {
             Ok(Self {
@@ -302,58 +333,12 @@ impl MoneyWithVAT {
         }
     }
 
-    fn __neg__(&self) -> Self {
-        Self {
-            net: Money {
-                amount: if self.net.amount != Decimal::new(0, 0) {
-                    -self.net.amount
-                } else {
-                    self.net.amount
-                },
-            },
-            tax: Money {
-                amount: if self.tax.amount != Decimal::new(0, 0) {
-                    -self.tax.amount
-                } else {
-                    self.tax.amount
-                },
-            },
-        }
-    }
-
-    fn __abs__(&self) -> Self {
-        Self {
-            net: Money {
-                amount: self.net.amount.abs(),
-            },
-            tax: Money {
-                amount: self.tax.amount.abs(),
-            },
-        }
-    }
-
     fn __bool__(&self) -> bool {
         !self.net.amount.is_zero() || !self.tax.amount.is_zero()
     }
 
-    fn __eq__(&self, other: Self) -> bool {
-        self.get_gross().amount == other.get_gross().amount
-    }
-
-    fn __lt__(&self, other: Self) -> bool {
-        self.get_gross().amount < other.get_gross().amount
-    }
-
-    fn __le__(&self, other: Self) -> bool {
-        self.get_gross().amount <= other.get_gross().amount
-    }
-
-    fn __gt__(&self, other: Self) -> bool {
-        self.get_gross().amount > other.get_gross().amount
-    }
-
-    fn __ge__(&self, other: Self) -> bool {
-        self.get_gross().amount >= other.get_gross().amount
+    fn __richcmp__(&self, other: &Self, op: CompareOp) -> bool {
+        op.matches(self.get_gross().amount.cmp(&other.get_gross().amount))
     }
 
     #[staticmethod]

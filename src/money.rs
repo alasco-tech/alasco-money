@@ -1,3 +1,4 @@
+use pyo3::basic::CompareOp;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyCFunction, PyDict, PyIterator, PyTuple};
@@ -78,6 +79,22 @@ impl Money {
         let mut hasher = DefaultHasher::new();
         self.amount.hash(&mut hasher);
         hasher.finish()
+    }
+
+    fn __neg__(&self) -> Self {
+        Self {
+            amount: if self.amount != Decimal::new(0, 0) {
+                -self.amount
+            } else {
+                self.amount
+            },
+        }
+    }
+
+    fn __abs__(&self) -> Self {
+        Self {
+            amount: self.amount.abs(),
+        }
     }
 
     fn __add__(&self, other: Bound<PyAny>) -> PyResult<Self> {
@@ -188,44 +205,12 @@ impl Money {
         })
     }
 
-    fn __neg__(&self) -> Self {
-        Self {
-            amount: if self.amount != Decimal::new(0, 0) {
-                -self.amount
-            } else {
-                self.amount
-            },
-        }
-    }
-
-    fn __abs__(&self) -> Self {
-        Self {
-            amount: self.amount.abs(),
-        }
-    }
-
     fn __bool__(&self) -> bool {
         !self.amount.is_zero()
     }
 
-    fn __eq__(&self, other: Self) -> bool {
-        self.amount == other.amount
-    }
-
-    fn __lt__(&self, other: Self) -> bool {
-        self.amount < other.amount
-    }
-
-    fn __le__(&self, other: Self) -> bool {
-        self.amount <= other.amount
-    }
-
-    fn __gt__(&self, other: Self) -> bool {
-        self.amount > other.amount
-    }
-
-    fn __ge__(&self, other: Self) -> bool {
-        self.amount >= other.amount
+    fn __richcmp__(&self, other: &Self, op: CompareOp) -> bool {
+        op.matches(self.amount.cmp(&other.amount))
     }
 
     pub fn for_json(&self) -> String {
