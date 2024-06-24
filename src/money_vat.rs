@@ -181,18 +181,10 @@ impl MoneyWithVAT {
     fn __neg__(&self) -> Self {
         Self {
             net: Money {
-                amount: if self.net.amount != Decimal::new(0, 0) {
-                    -self.net.amount
-                } else {
-                    self.net.amount
-                },
+                amount: -self.net.amount,
             },
             tax: Money {
-                amount: if self.tax.amount != Decimal::new(0, 0) {
-                    -self.tax.amount
-                } else {
-                    self.tax.amount
-                },
+                amount: -self.tax.amount,
             },
         }
     }

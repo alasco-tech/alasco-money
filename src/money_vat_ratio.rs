@@ -55,16 +55,8 @@ impl MoneyWithVATRatio {
 
     fn __neg__(&self) -> Self {
         Self {
-            net_ratio: if self.net_ratio != Decimal::new(0, 0) {
-                -self.net_ratio
-            } else {
-                self.net_ratio
-            },
-            gross_ratio: if self.gross_ratio != Decimal::new(0, 0) {
-                -self.gross_ratio
-            } else {
-                self.gross_ratio
-            },
+            net_ratio: -self.net_ratio,
+            gross_ratio: -self.gross_ratio,
         }
     }
 

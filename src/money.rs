@@ -83,11 +83,7 @@ impl Money {
 
     fn __neg__(&self) -> Self {
         Self {
-            amount: if self.amount != Decimal::new(0, 0) {
-                -self.amount
-            } else {
-                self.amount
-            },
+            amount: -self.amount,
         }
     }
 
