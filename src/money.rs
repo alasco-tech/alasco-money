@@ -214,7 +214,11 @@ impl Money {
     }
 
     pub fn for_json(&self) -> String {
-        self.round(MONEY_PRECISION).amount.to_string()
+        return format!(
+            "{number:.prec$}",
+            number = self.round(MONEY_PRECISION).amount,
+            prec = MONEY_PRECISION.unwrap() as usize
+        );
     }
 
     #[staticmethod]
