@@ -8,8 +8,6 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use crate::traits::*;
-
 pub const MONEY_PRECISION: Option<i32> = Some(12);
 
 #[pyclass(subclass)]
@@ -289,18 +287,16 @@ impl Money {
 
         Ok(schema.into())
     }
-}
 
-impl Copyable for Money {
-    fn copy(&self) -> Self {
+    pub fn copy(&self) -> Self {
         self.clone()
     }
 
-    fn __copy__(&self) -> Self {
+    pub fn __copy__(&self) -> Self {
         self.clone()
     }
 
-    fn __deepcopy__(&self, _memo: Bound<PyDict>) -> Self {
+    pub fn __deepcopy__(&self, _memo: Bound<PyDict>) -> Self {
         self.clone()
     }
 }
