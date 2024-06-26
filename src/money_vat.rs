@@ -163,7 +163,10 @@ impl MoneyWithVAT {
     }
 
     fn __str__(&self) -> String {
-        format!("{} {}", self.net.amount, self.tax.amount)
+        format!(
+            "MoneyWithVAT(net='{}', tax='{}')",
+            self.net.amount, self.tax.amount
+        )
     }
 
     fn __repr__(&self) -> String {

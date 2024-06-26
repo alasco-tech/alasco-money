@@ -43,7 +43,10 @@ impl MoneyWithVATRatio {
     }
 
     fn __str__(&self) -> String {
-        format!("{} {}", self.net_ratio, self.gross_ratio)
+        format!(
+            "MoneyWithVATRatio(net_ratio='{}', gross_ratio='{}')",
+            self.net_ratio, self.gross_ratio
+        )
     }
 
     fn __repr__(&self) -> String {

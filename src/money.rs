@@ -71,7 +71,7 @@ impl Money {
     }
 
     fn __str__(&self) -> String {
-        self.amount.to_string()
+        format!("Money('{}')", self.amount)
     }
 
     fn __repr__(&self) -> String {
