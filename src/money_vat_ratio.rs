@@ -125,10 +125,11 @@ impl MoneyWithVATRatio {
     }
 
     #[staticmethod]
+    #[pyo3(signature = (value, _info=None))]
     fn validate(value: Bound<PyAny>, _info: Option<Bound<PyAny>>) -> PyResult<Self> {
         if let Ok(money_with_vat_ratio) = value.extract::<Self>() {
             return Ok(money_with_vat_ratio);
-        } else if let Ok(dict) = value.extract::<&PyDict>() {
+        } else if let Ok(dict) = value.extract::<Bound<PyDict>>() {
             if let Ok(Some(net_ratio)) = dict.get_item("net_ratio") {
                 if let Ok(Some(gross_ratio)) = dict.get_item("gross_ratio") {
                     if let Ok(true_net_ratio) = net_ratio.extract::<Decimal>() {

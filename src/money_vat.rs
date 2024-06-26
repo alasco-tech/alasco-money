@@ -25,6 +25,7 @@ pub struct MoneyWithVAT {
 #[pymethods]
 impl MoneyWithVAT {
     #[new]
+    #[pyo3(signature = (net=None, tax=None))]
     fn new(net: Option<Bound<PyAny>>, tax: Option<Bound<PyAny>>) -> PyResult<Self> {
         let net_money = if let Some(net_obj) = net {
             if let Ok(money) = net_obj.extract::<Money>() {
@@ -401,6 +402,7 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
+    #[pyo3(signature = (dividend=None, divisor=None))]
     fn safe_ratio(dividend: Option<Self>, divisor: Option<Self>) -> Option<MoneyWithVATRatio> {
         let fixed_dividend = if let Some(true_dividend) = dividend {
             true_dividend.rounded_to_cents()
@@ -440,6 +442,7 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
+    #[pyo3(signature = (dividend=None, divisor=None))]
     fn safe_ratio_decimal(
         dividend: Option<Self>,
         divisor: Option<Decimal>,
@@ -526,10 +529,11 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
+    #[pyo3(signature = (value, _info=None))]
     fn validate(value: Bound<PyAny>, _info: Option<Bound<PyAny>>) -> PyResult<Self> {
         if let Ok(money_with_vat) = value.extract::<Self>() {
             return Ok(money_with_vat);
-        } else if let Ok(dict) = value.extract::<&PyDict>() {
+        } else if let Ok(dict) = value.extract::<Bound<PyDict>>() {
             if let Ok(Some(net)) = dict.get_item("net") {
                 if let Ok(Some(tax)) = dict.get_item("tax") {
                     if let Ok(true_net) = net.extract::<Decimal>() {
@@ -622,6 +626,7 @@ impl MoneyWithVAT {
     }
 
     #[staticmethod]
+    #[pyo3(signature = (dict=None))]
     fn from_json(dict: Option<Bound<PyAny>>) -> PyResult<Self> {
         match json_to_money_vat(dict) {
             Ok(value) => Ok(value),
@@ -653,12 +658,12 @@ impl MoneyWithVAT {
 }
 
 fn json_to_money_vat(raw: Option<Bound<PyAny>>) -> PyResult<MoneyWithVAT> {
-    let dig = |any: &PyAny, key: &str| {
-        if let Ok(dict) = any.extract::<&PyDict>() {
+    let dig = |any: &Bound<PyAny>, key: &str| {
+        if let Ok(dict) = any.extract::<Bound<PyDict>>() {
             if let Ok(Some(amount_with_vat)) = dict.get_item("amount_with_vat") {
-                if let Ok(true_amount_with_vat) = amount_with_vat.extract::<&PyDict>() {
+                if let Ok(true_amount_with_vat) = amount_with_vat.extract::<Bound<PyDict>>() {
                     if let Ok(Some(target)) = true_amount_with_vat.get_item(key) {
-                        if let Ok(true_target) = target.extract::<&PyDict>() {
+                        if let Ok(true_target) = target.extract::<Bound<PyDict>>() {
                             if let Ok(Some(amount)) = true_target.get_item("amount") {
                                 if let Ok(true_amount) = amount.extract::<Decimal>() {
                                     return Ok(true_amount);
@@ -672,21 +677,19 @@ fn json_to_money_vat(raw: Option<Bound<PyAny>>) -> PyResult<MoneyWithVAT> {
         Err(PyValueError::new_err("Invalid dict"))
     };
 
-    if let Some(true_raw) = raw {
-        if let Ok(true_dict) = true_raw.extract::<&PyAny>() {
-            let raw_net = dig(true_dict, "net");
-            let raw_gross = dig(true_dict, "gross");
+    if let Some(true_dict) = raw {
+        let raw_net = dig(&true_dict, "net");
+        let raw_gross = dig(&true_dict, "gross");
 
-            return match (raw_net, raw_gross) {
-                (Ok(net), Ok(gross)) => Ok(MoneyWithVAT {
-                    net: Money { amount: net },
-                    tax: Money {
-                        amount: gross - net,
-                    },
-                }),
-                _ => Err(PyValueError::new_err("Invalid dict")),
-            };
-        }
+        return match (raw_net, raw_gross) {
+            (Ok(net), Ok(gross)) => Ok(MoneyWithVAT {
+                net: Money { amount: net },
+                tax: Money {
+                    amount: gross - net,
+                },
+            }),
+            _ => Err(PyValueError::new_err("Invalid dict")),
+        };
     }
 
     Err(PyValueError::new_err("Invalid dict"))

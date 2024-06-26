@@ -19,6 +19,7 @@ pub struct Money {
 #[pymethods]
 impl Money {
     #[new]
+    #[pyo3(signature = (amount=None))]
     fn new(amount: Option<Bound<PyAny>>) -> PyResult<Self> {
         if let Some(obj) = amount {
             if let Ok(money) = obj.extract::<Self>() {
@@ -47,6 +48,7 @@ impl Money {
         self.amount
     }
 
+    #[pyo3(signature = (n=None))]
     pub fn round(&self, n: Option<i32>) -> Self {
         Self {
             amount: round_with_negative_scale(
@@ -57,6 +59,7 @@ impl Money {
         }
     }
 
+    #[pyo3(signature = (n=None))]
     pub fn round_up(&self, n: Option<i32>) -> Self {
         Self {
             amount: round_with_negative_scale(
@@ -218,6 +221,7 @@ impl Money {
     }
 
     #[staticmethod]
+    #[pyo3(signature = (value, _info=None))]
     fn validate(value: Bound<PyAny>, _info: Option<Bound<PyAny>>) -> PyResult<Self> {
         if let Ok(money) = value.extract::<Self>() {
             return Ok(money);
