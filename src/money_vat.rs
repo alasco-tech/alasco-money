@@ -181,12 +181,8 @@ impl MoneyWithVAT {
 
     fn __neg__(&self) -> Self {
         Self {
-            net: Money {
-                amount: -self.net.amount,
-            },
-            tax: Money {
-                amount: -self.tax.amount,
-            },
+            net: self.net.__neg__(),
+            tax: self.tax.__neg__(),
         }
     }
 

@@ -84,9 +84,9 @@ impl Money {
         hasher.finish()
     }
 
-    fn __neg__(&self) -> Self {
+    pub fn __neg__(&self) -> Self {
         Self {
-            amount: -self.amount,
+            amount: Decimal::new(0, 0) - self.amount,
         }
     }
 
