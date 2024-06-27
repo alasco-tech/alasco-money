@@ -116,10 +116,23 @@ def test_ne():
         Decimal("-0"),
         -Decimal("0"),
         -1 * Decimal("0"),
+        "-0",
     ],
 )
 def test_minus_zero(decimal):
-    assert str(Money(decimal).amount) == str(decimal)
+    assert str(Money(decimal).amount) == str(Decimal(decimal))
+
+
+@pytest.mark.parametrize(
+    "decimal",
+    [
+        Money("-0"),
+        -Money("0"),
+        -1 * Money("0"),
+    ],
+)
+def test_advanced_negation(decimal):
+    assert str(Money(decimal).amount) == "-0"
 
 
 def test_equality_to_other_types():

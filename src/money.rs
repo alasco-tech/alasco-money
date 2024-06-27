@@ -80,7 +80,7 @@ impl Money {
 
     pub fn __neg__(&self) -> Self {
         Self {
-            amount: Decimal::new(0, 0) - self.amount,
+            amount: -self.amount,
         }
     }
 
@@ -132,9 +132,14 @@ impl Money {
 
     fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
         if let Ok(other_decimal) = get_decimal(other) {
-            Ok(Self {
-                amount: self.amount * other_decimal,
-            })
+            if other_decimal == Decimal::new(-1, 0) {
+                // Hack for minus zero
+                Ok(self.__neg__())
+            } else {
+                Ok(Self {
+                    amount: self.amount * other_decimal,
+                })
+            }
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Unsupported operand",
@@ -335,6 +340,7 @@ pub fn get_decimal(obj: Bound<PyAny>) -> PyResult<Decimal> {
         Err(PyValueError::new_err("Invalid decimal"))
     } else if let Ok(mut amount) = obj.extract::<Decimal>() {
         if obj.to_string().trim_start().starts_with("-") {
+            // Hack for minus zero
             amount.set_sign_negative(true);
         };
         Ok(amount)
