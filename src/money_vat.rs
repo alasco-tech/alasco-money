@@ -27,52 +27,17 @@ impl MoneyWithVAT {
     #[new]
     #[pyo3(signature = (net=None, tax=None))]
     fn new(net: Option<Bound<PyAny>>, tax: Option<Bound<PyAny>>) -> PyResult<Self> {
-        let net_money = if let Some(net_obj) = net {
-            if let Ok(money) = net_obj.extract::<Money>() {
-                money.clone()
-            } else if let Ok(s) = net_obj.extract::<&str>() {
-                match Decimal::from_str(s) {
-                    Ok(decimal) => Money { amount: decimal },
-                    Err(_) => return Err(PyValueError::new_err("Invalid decimal")),
-                }
-            } else if let Ok(amount) = get_decimal(net_obj) {
-                Money { amount }
-            } else {
-                Money {
-                    amount: Decimal::new(0, 0),
-                }
-            }
-        } else {
-            Money {
-                amount: Decimal::new(0, 0),
-            }
-        };
+        let net_result = Money::new(net);
+        let tax_result = Money::new(tax);
 
-        let tax_money = if let Some(tax_obj) = tax {
-            if let Ok(money) = tax_obj.extract::<Money>() {
-                money.clone()
-            } else if let Ok(s) = tax_obj.extract::<&str>() {
-                match Decimal::from_str(s) {
-                    Ok(decimal) => Money { amount: decimal },
-                    Err(_) => return Err(PyValueError::new_err("Invalid decimal")),
-                }
-            } else if let Ok(amount) = get_decimal(tax_obj) {
-                Money { amount }
-            } else {
-                Money {
-                    amount: Decimal::new(0, 0),
-                }
-            }
-        } else {
-            Money {
-                amount: Decimal::new(0, 0),
-            }
-        };
-
-        Ok(MoneyWithVAT {
-            net: net_money,
-            tax: tax_money,
-        })
+        match (net_result, tax_result) {
+            (Ok(net_money), Ok(tax_money)) => Ok(MoneyWithVAT {
+                net: net_money,
+                tax: tax_money,
+            }),
+            (Err(err), _) => Err(err),
+            (_, Err(err)) => Err(err),
+        }
     }
 
     #[getter(net)]

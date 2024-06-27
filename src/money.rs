@@ -6,7 +6,6 @@ use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::{Decimal, RoundingStrategy};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::str::FromStr;
 
 pub const MONEY_PRECISION: Option<i32> = Some(12);
 
@@ -20,17 +19,12 @@ pub struct Money {
 impl Money {
     #[new]
     #[pyo3(signature = (amount=None))]
-    fn new(amount: Option<Bound<PyAny>>) -> PyResult<Self> {
+    pub fn new(amount: Option<Bound<PyAny>>) -> PyResult<Self> {
         if let Some(obj) = amount {
             if let Ok(money) = obj.extract::<Self>() {
                 Ok(Self {
                     amount: money.amount.clone(),
                 })
-            } else if let Ok(s) = obj.extract::<&str>() {
-                match Decimal::from_str(s) {
-                    Ok(decimal) => Ok(Self { amount: decimal }),
-                    Err(_) => Err(PyValueError::new_err("Invalid decimal")),
-                }
             } else if let Ok(decimal) = get_decimal(obj) {
                 Ok(Self { amount: decimal })
             } else {
