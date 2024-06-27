@@ -51,6 +51,21 @@ pub fn decimal_mult(left: Decimal, right: Decimal) -> Decimal {
     }
 }
 
+// Divides decimals the way of Python
+pub fn decimal_div(left: Decimal, right: Decimal) -> Decimal {
+    let zero = Decimal::new(0, 0);
+
+    if left.abs() == zero && right.abs() != zero {
+        if left.is_sign_negative() == right.is_sign_negative() {
+            zero
+        } else {
+            -zero
+        }
+    } else {
+        left / right
+    }
+}
+
 // Rounds decimals the way of Python
 pub fn round(value: Decimal, scale: i32, round_up: bool) -> Decimal {
     let strategy = if round_up {
@@ -64,5 +79,5 @@ pub fn round(value: Decimal, scale: i32, round_up: bool) -> Decimal {
     }
 
     let factor = Decimal::new(10_i64.pow((-scale) as u32), 0);
-    (value / factor).round() * factor
+    decimal_mult(decimal_div(value, factor).round(), factor)
 }

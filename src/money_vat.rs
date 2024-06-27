@@ -7,7 +7,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use crate::decimals::{decimal_add, decimal_mult, get_decimal};
+use crate::decimals::{decimal_add, decimal_div, decimal_mult, get_decimal};
 use crate::money::{Money, MONEY_PRECISION};
 use crate::money_vat_ratio::MoneyWithVATRatio;
 
@@ -61,7 +61,7 @@ impl MoneyWithVAT {
         if self.net.amount == Decimal::new(0, 0) {
             Decimal::new(0, 0)
         } else {
-            self.tax.amount / self.net.amount
+            decimal_div(self.tax.amount, self.net.amount)
         }
     }
 
@@ -261,10 +261,10 @@ impl MoneyWithVAT {
         } else {
             Ok(Self {
                 net: Money {
-                    amount: self.net.amount / other_decimal,
+                    amount: decimal_div(self.net.amount, other_decimal),
                 },
                 tax: Money {
-                    amount: self.tax.amount / other_decimal,
+                    amount: decimal_div(self.tax.amount, other_decimal),
                 },
             })
         }
@@ -283,10 +283,10 @@ impl MoneyWithVAT {
         } else {
             Ok(Self {
                 net: Money {
-                    amount: other_decimal / self.net.amount,
+                    amount: decimal_div(other_decimal, self.net.amount),
                 },
                 tax: Money {
-                    amount: other_decimal / self.tax.amount,
+                    amount: decimal_div(other_decimal, self.tax.amount),
                 },
             })
         }
@@ -361,8 +361,8 @@ impl MoneyWithVAT {
             ))
         } else {
             Ok(MoneyWithVATRatio {
-                net_ratio: dividend.net.amount / divisor.net.amount,
-                gross_ratio: dividend.get_gross().amount / divisor.get_gross().amount,
+                net_ratio: decimal_div(dividend.net.amount, divisor.net.amount),
+                gross_ratio: decimal_div(dividend.get_gross().amount, divisor.get_gross().amount),
             })
         }
     }
@@ -401,8 +401,11 @@ impl MoneyWithVAT {
             None
         } else {
             Some(MoneyWithVATRatio {
-                net_ratio: fixed_dividend.net.amount / fixed_divisor.net.amount,
-                gross_ratio: fixed_dividend.get_gross().amount / fixed_divisor.get_gross().amount,
+                net_ratio: decimal_div(fixed_dividend.net.amount, fixed_divisor.net.amount),
+                gross_ratio: decimal_div(
+                    fixed_dividend.get_gross().amount,
+                    fixed_divisor.get_gross().amount,
+                ),
             })
         }
     }
@@ -420,10 +423,10 @@ impl MoneyWithVAT {
                 } else {
                     Some(MoneyWithVAT {
                         net: Money {
-                            amount: true_dividend.net.amount / true_divisor,
+                            amount: decimal_div(true_dividend.net.amount, true_divisor),
                         },
                         tax: Money {
-                            amount: true_dividend.tax.amount / true_divisor,
+                            amount: decimal_div(true_dividend.tax.amount, true_divisor),
                         },
                     })
                 }

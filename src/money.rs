@@ -155,7 +155,7 @@ impl Money {
                         "Division by zero",
                     ))
                 } else {
-                    Ok((self.amount / other_money.amount).into_py(py))
+                    Ok((decimal_div(self.amount, other_money.amount)).into_py(py))
                 }
             } else if let Ok(other_decimal) = get_decimal(other) {
                 if other_decimal == Decimal::new(0, 0) {
@@ -164,7 +164,7 @@ impl Money {
                     ))
                 } else {
                     Ok(Self {
-                        amount: self.amount / other_decimal,
+                        amount: decimal_div(self.amount, other_decimal),
                     }
                     .into_py(py))
                 }
@@ -185,10 +185,10 @@ impl Money {
 
         Python::with_gil(|py| {
             if let Ok(other_money) = other.extract::<Self>() {
-                Ok((other_money.amount / self.amount).into_py(py))
+                Ok((decimal_div(other_money.amount, self.amount)).into_py(py))
             } else if let Ok(other_decimal) = get_decimal(other) {
                 Ok(Self {
-                    amount: other_decimal / self.amount,
+                    amount: decimal_div(other_decimal, self.amount),
                 }
                 .into_py(py))
             } else {

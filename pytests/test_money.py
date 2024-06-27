@@ -136,7 +136,7 @@ def test_advanced_negation(decimal):
     assert str(Money(decimal).amount) == "-0"
 
 
-OPERANDS = ["0", "-0", "1", "-1"]
+OPERANDS = [func(item) for item in ["0", "-0", "1", "-1"] for func in [Decimal, int]]
 
 
 @pytest.mark.parametrize("left", OPERANDS)
@@ -150,8 +150,8 @@ def test_add_with_operands(left, right):
     assert str(money_left.amount) == str(left)
     assert str(money_right.amount) == str(right)
 
-    assert str((money_left + Decimal(right)).amount) == str(expected)
-    assert str((Decimal(left) + money_right).amount) == str(expected)
+    assert str((money_left + right).amount) == str(expected)
+    assert str((left + money_right).amount) == str(expected)
     assert str((money_left + money_right).amount) == str(expected)
 
 
@@ -166,8 +166,8 @@ def test_sub_with_operands(left, right):
     assert str(money_left.amount) == str(left)
     assert str(money_right.amount) == str(right)
 
-    assert str((money_left - Decimal(right)).amount) == str(expected)
-    assert str((Decimal(left) - money_right).amount) == str(expected)
+    assert str((money_left - right).amount) == str(expected)
+    assert str((left - money_right).amount) == str(expected)
     assert str((money_left - money_right).amount) == str(expected)
 
 
@@ -182,8 +182,26 @@ def test_mult_with_operands(left, right):
     assert str(money_left.amount) == str(left)
     assert str(money_right.amount) == str(right)
 
-    assert str((money_left * Decimal(right)).amount) == str(expected)
-    assert str((Decimal(left) * money_right).amount) == str(expected)
+    assert str((money_left * right).amount) == str(expected)
+    assert str((left * money_right).amount) == str(expected)
+
+
+@pytest.mark.parametrize("left", OPERANDS)
+@pytest.mark.parametrize("right", OPERANDS)
+def test_div_with_operands(left, right):
+    if right == 0:
+        pytest.skip()
+
+    expected = Decimal(left) / Decimal(right)
+
+    money_left = Money(left)
+    money_right = Money(right)
+
+    assert str(money_left.amount) == str(left)
+    assert str(money_right.amount) == str(right)
+
+    assert str((money_left / right).amount) == str(expected)
+    assert str((left / money_right).amount) == str(expected)
 
 
 def test_equality_to_other_types():
