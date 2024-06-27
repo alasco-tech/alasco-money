@@ -7,9 +7,9 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use crate::money::get_decimal;
 use crate::money::Money;
 use crate::money::MONEY_PRECISION;
+use crate::money::{decimal_add, get_decimal};
 use crate::money_vat_ratio::MoneyWithVATRatio;
 
 const GERMAN_VAT_RATES: [i16; 5] = [0, 5, 7, 16, 19];
@@ -169,16 +169,16 @@ impl MoneyWithVAT {
         if let Ok(other_money_with_vat) = other.extract::<Self>() {
             Ok(Self {
                 net: Money {
-                    amount: self.net.amount + other_money_with_vat.net.amount,
+                    amount: decimal_add(self.net.amount, other_money_with_vat.net.amount),
                 },
                 tax: Money {
-                    amount: self.tax.amount + other_money_with_vat.tax.amount,
+                    amount: decimal_add(self.tax.amount, other_money_with_vat.tax.amount),
                 },
             })
         } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
                 net: Money {
-                    amount: self.net.amount + other_decimal,
+                    amount: decimal_add(self.net.amount, other_decimal),
                 },
                 tax: self.tax.clone(),
             })
@@ -197,16 +197,16 @@ impl MoneyWithVAT {
         if let Ok(other_money_with_vat) = other.extract::<Self>() {
             Ok(Self {
                 net: Money {
-                    amount: self.net.amount - other_money_with_vat.net.amount,
+                    amount: decimal_add(self.net.amount, -other_money_with_vat.net.amount),
                 },
                 tax: Money {
-                    amount: self.tax.amount - other_money_with_vat.tax.amount,
+                    amount: decimal_add(self.tax.amount, -other_money_with_vat.tax.amount),
                 },
             })
         } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
                 net: Money {
-                    amount: self.net.amount - other_decimal,
+                    amount: decimal_add(self.net.amount, -other_decimal),
                 },
                 tax: self.tax.clone(),
             })

@@ -93,11 +93,11 @@ impl Money {
     fn __add__(&self, other: Bound<PyAny>) -> PyResult<Self> {
         if let Ok(other_money) = other.extract::<Self>() {
             Ok(Self {
-                amount: self.amount + other_money.amount,
+                amount: decimal_add(self.amount, other_money.amount),
             })
         } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
-                amount: self.amount + other_decimal,
+                amount: decimal_add(self.amount, other_decimal),
             })
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
@@ -113,11 +113,11 @@ impl Money {
     fn __sub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
         if let Ok(other_money) = other.extract::<Self>() {
             Ok(Self {
-                amount: self.amount - other_money.amount,
+                amount: decimal_add(self.amount, -other_money.amount),
             })
         } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
-                amount: self.amount - other_decimal,
+                amount: decimal_add(self.amount, -other_decimal),
             })
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
@@ -320,6 +320,22 @@ pub fn sum_(elems: Bound<PyAny>) -> PyResult<Money> {
     Ok(Money { amount })
 }
 
+// Adds decimals the way of Python
+pub fn decimal_add(left: Decimal, right: Decimal) -> Decimal {
+    let zero = Decimal::new(0, 0);
+
+    if left.abs() == zero && right.abs() == zero {
+        if left.is_sign_negative() && right.is_sign_negative() {
+            -zero
+        } else {
+            zero
+        }
+    } else {
+        left + right
+    }
+}
+
+// Rounds decimals the way of Python
 fn round_with_negative_scale(value: Decimal, scale: i32, round_up: bool) -> Decimal {
     let strategy = if round_up {
         RoundingStrategy::MidpointAwayFromZero
