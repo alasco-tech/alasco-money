@@ -53,7 +53,7 @@ impl MoneyWithVAT {
     #[getter(gross)]
     fn get_gross(&self) -> Money {
         Money {
-            amount: self.net.amount + self.tax.amount,
+            amount: decimal_add(self.net.amount, self.tax.amount),
         }
     }
 
@@ -77,7 +77,7 @@ impl MoneyWithVAT {
 
         for rate in Self::known_vat_rates() {
             let vat = rate * self.net.amount;
-            let vat_diff = (vat - self.tax.amount).abs();
+            let vat_diff = (decimal_add(vat, -self.tax.amount)).abs();
             if vat_diff < boundary {
                 return rate;
             }
@@ -115,7 +115,7 @@ impl MoneyWithVAT {
                 amount: rounded_net,
             },
             tax: Money {
-                amount: self.get_gross().round(Some(2)).amount - rounded_net,
+                amount: decimal_add(self.get_gross().round(Some(2)).amount, -rounded_net),
             },
         };
     }
@@ -223,7 +223,10 @@ impl MoneyWithVAT {
             Ok(Self {
                 net: Money { amount: net_value },
                 tax: Money {
-                    amount: other_ratio.gross_ratio * self.get_gross().amount - net_value,
+                    amount: decimal_add(
+                        other_ratio.gross_ratio * self.get_gross().amount,
+                        -net_value,
+                    ),
                 },
             })
         } else if let Ok(other_decimal) = get_decimal(other) {
@@ -334,7 +337,7 @@ impl MoneyWithVAT {
                         amount: true_max_net,
                     },
                     tax: Money {
-                        amount: true_max_gross - true_max_net,
+                        amount: decimal_add(true_max_gross, -true_max_net),
                     },
                 })
             } else {
@@ -443,8 +446,8 @@ impl MoneyWithVAT {
         for elem in iterator {
             if let Ok(item) = elem {
                 if let Ok(value) = item.extract::<Self>() {
-                    net_sum += value.net.amount;
-                    tax_sum += value.tax.amount;
+                    net_sum = decimal_add(net_sum, value.net.amount);
+                    tax_sum = decimal_add(tax_sum, value.tax.amount);
                 }
             }
         }
@@ -466,8 +469,8 @@ impl MoneyWithVAT {
         for elem in iterator {
             if let Ok(item) = elem {
                 if let Ok(Some(value)) = item.extract::<Option<Self>>() {
-                    net_sum += value.net.amount;
-                    tax_sum += value.tax.amount;
+                    net_sum = decimal_add(net_sum, value.net.amount);
+                    tax_sum = decimal_add(tax_sum, value.tax.amount);
                     any_value = true;
                 }
             }
@@ -649,7 +652,7 @@ fn json_to_money_vat(raw: Option<Bound<PyAny>>) -> PyResult<MoneyWithVAT> {
             (Ok(net), Ok(gross)) => Ok(MoneyWithVAT {
                 net: Money { amount: net },
                 tax: Money {
-                    amount: gross - net,
+                    amount: decimal_add(gross, -net),
                 },
             }),
             _ => Err(PyValueError::new_err("Invalid dict")),
