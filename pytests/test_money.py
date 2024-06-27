@@ -109,6 +109,19 @@ def test_ne():
     assert Money(Decimal("1000000")) != x
 
 
+@pytest.mark.parametrize(
+    "decimal",
+    [
+        Decimal("0"),
+        Decimal("-0"),
+        -Decimal("0"),
+        -1 * Decimal("0"),
+    ],
+)
+def test_minus_zero(decimal):
+    assert str(Money(decimal).amount) == str(decimal)
+
+
 def test_equality_to_other_types():
     x = Money(0)
     assert x != None  # noqa: E711

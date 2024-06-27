@@ -339,7 +339,10 @@ fn round_with_negative_scale(value: Decimal, scale: i32, round_up: bool) -> Deci
 pub fn get_decimal(obj: Bound<PyAny>) -> PyResult<Decimal> {
     if let Ok(_) = obj.extract::<Money>() {
         Err(PyValueError::new_err("Invalid decimal"))
-    } else if let Ok(amount) = obj.extract::<Decimal>() {
+    } else if let Ok(mut amount) = obj.extract::<Decimal>() {
+        if obj.to_string().trim_start().starts_with("-") {
+            amount.set_sign_negative(true);
+        };
         Ok(amount)
     } else if let Ok(f) = obj.extract::<f64>() {
         Ok(Decimal::from_f64(f).unwrap())
