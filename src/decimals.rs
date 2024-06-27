@@ -36,6 +36,21 @@ pub fn decimal_add(left: Decimal, right: Decimal) -> Decimal {
     }
 }
 
+// Multiplies decimals the way of Python
+pub fn decimal_mult(left: Decimal, right: Decimal) -> Decimal {
+    let zero = Decimal::new(0, 0);
+
+    if left.abs() == zero || right.abs() == zero {
+        if left.is_sign_negative() == right.is_sign_negative() {
+            zero
+        } else {
+            -zero
+        }
+    } else {
+        left * right
+    }
+}
+
 // Rounds decimals the way of Python
 pub fn round(value: Decimal, scale: i32, round_up: bool) -> Decimal {
     let strategy = if round_up {

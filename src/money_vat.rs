@@ -7,7 +7,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use crate::decimals::{decimal_add, get_decimal};
+use crate::decimals::{decimal_add, decimal_mult, get_decimal};
 use crate::money::{Money, MONEY_PRECISION};
 use crate::money_vat_ratio::MoneyWithVATRatio;
 
@@ -75,7 +75,7 @@ impl MoneyWithVAT {
         }
 
         for rate in Self::known_vat_rates() {
-            let vat = rate * self.net.amount;
+            let vat = decimal_mult(rate, self.net.amount);
             let vat_diff = (decimal_add(vat, -self.tax.amount)).abs();
             if vat_diff < boundary {
                 return rate;
@@ -218,12 +218,12 @@ impl MoneyWithVAT {
 
     fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
         if let Ok(other_ratio) = other.extract::<MoneyWithVATRatio>() {
-            let net_value = other_ratio.net_ratio * self.net.amount;
+            let net_value = decimal_mult(other_ratio.net_ratio, self.net.amount);
             Ok(Self {
                 net: Money { amount: net_value },
                 tax: Money {
                     amount: decimal_add(
-                        other_ratio.gross_ratio * self.get_gross().amount,
+                        decimal_mult(other_ratio.gross_ratio, self.get_gross().amount),
                         -net_value,
                     ),
                 },
@@ -231,10 +231,10 @@ impl MoneyWithVAT {
         } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
                 net: Money {
-                    amount: self.net.amount * other_decimal,
+                    amount: decimal_mult(self.net.amount, other_decimal),
                 },
                 tax: Money {
-                    amount: self.tax.amount * other_decimal,
+                    amount: decimal_mult(self.tax.amount, other_decimal),
                 },
             })
         } else {

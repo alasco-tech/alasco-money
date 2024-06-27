@@ -136,9 +136,12 @@ def test_advanced_negation(decimal):
     assert str(Money(decimal).amount) == "-0"
 
 
-@pytest.mark.parametrize("left", ["0", "-0"])
-@pytest.mark.parametrize("right", ["0", "-0"])
-def test_add_with_negative_zeros(left, right):
+OPERANDS = ["0", "-0", "1", "-1"]
+
+
+@pytest.mark.parametrize("left", OPERANDS)
+@pytest.mark.parametrize("right", OPERANDS)
+def test_add_with_operands(left, right):
     expected = Decimal(left) + Decimal(right)
 
     money_left = Money(left)
@@ -152,9 +155,9 @@ def test_add_with_negative_zeros(left, right):
     assert str((money_left + money_right).amount) == str(expected)
 
 
-@pytest.mark.parametrize("left", ["0", "-0"])
-@pytest.mark.parametrize("right", ["0", "-0"])
-def test_sub_with_negative_zeros(left, right):
+@pytest.mark.parametrize("left", OPERANDS)
+@pytest.mark.parametrize("right", OPERANDS)
+def test_sub_with_operands(left, right):
     expected = Decimal(left) - Decimal(right)
 
     money_left = Money(left)
@@ -166,6 +169,21 @@ def test_sub_with_negative_zeros(left, right):
     assert str((money_left - Decimal(right)).amount) == str(expected)
     assert str((Decimal(left) - money_right).amount) == str(expected)
     assert str((money_left - money_right).amount) == str(expected)
+
+
+@pytest.mark.parametrize("left", OPERANDS)
+@pytest.mark.parametrize("right", OPERANDS)
+def test_mult_with_operands(left, right):
+    expected = Decimal(left) * Decimal(right)
+
+    money_left = Money(left)
+    money_right = Money(right)
+
+    assert str(money_left.amount) == str(left)
+    assert str(money_right.amount) == str(right)
+
+    assert str((money_left * Decimal(right)).amount) == str(expected)
+    assert str((Decimal(left) * money_right).amount) == str(expected)
 
 
 def test_equality_to_other_types():

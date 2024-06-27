@@ -4,7 +4,7 @@ use pyo3::types::{PyCFunction, PyDict, PyTuple};
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 
-use crate::decimals::{decimal_add, get_decimal};
+use crate::decimals::{decimal_add, decimal_mult, get_decimal};
 
 #[pyclass]
 #[derive(Debug, Clone)]
@@ -81,8 +81,8 @@ impl MoneyWithVATRatio {
         let other_decimal = Decimal::from_f64(other).unwrap();
 
         Self {
-            net_ratio: self.net_ratio * other_decimal,
-            gross_ratio: self.gross_ratio * other_decimal,
+            net_ratio: decimal_mult(self.net_ratio, other_decimal),
+            gross_ratio: decimal_mult(self.gross_ratio, other_decimal),
         }
     }
 

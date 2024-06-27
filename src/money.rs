@@ -133,14 +133,9 @@ impl Money {
 
     fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
         if let Ok(other_decimal) = get_decimal(other) {
-            if other_decimal == Decimal::new(-1, 0) {
-                // Hack for minus zero
-                Ok(self.__neg__())
-            } else {
-                Ok(Self {
-                    amount: self.amount * other_decimal,
-                })
-            }
+            Ok(Self {
+                amount: decimal_mult(self.amount, other_decimal),
+            })
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Unsupported operand",
