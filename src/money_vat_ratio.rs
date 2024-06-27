@@ -4,7 +4,7 @@ use pyo3::types::{PyCFunction, PyDict, PyTuple};
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 
-use crate::money::{decimal_add, get_decimal};
+use crate::decimals::{decimal_add, get_decimal};
 
 #[pyclass]
 #[derive(Debug, Clone)]

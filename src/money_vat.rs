@@ -7,9 +7,8 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use crate::money::Money;
-use crate::money::MONEY_PRECISION;
-use crate::money::{decimal_add, get_decimal};
+use crate::decimals::{decimal_add, get_decimal};
+use crate::money::{Money, MONEY_PRECISION};
 use crate::money_vat_ratio::MoneyWithVATRatio;
 
 const GERMAN_VAT_RATES: [i16; 5] = [0, 5, 7, 16, 19];

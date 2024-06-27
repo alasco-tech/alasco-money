@@ -1,3 +1,4 @@
+mod decimals;
 mod money;
 mod money_vat;
 mod money_vat_ratio;
