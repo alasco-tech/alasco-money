@@ -7,7 +7,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use crate::decimals::{decimal_add, decimal_div, decimal_mult, get_decimal};
+use crate::decimals::*;
 use crate::money::{Money, MONEY_PRECISION};
 use crate::money_vat_ratio::MoneyWithVATRatio;
 
@@ -76,7 +76,7 @@ impl MoneyWithVAT {
 
         for rate in Self::known_vat_rates() {
             let vat = decimal_mult(rate, self.net.amount);
-            let vat_diff = (decimal_add(vat, -self.tax.amount)).abs();
+            let vat_diff = (decimal_add(vat, decimal_neg(self.tax.amount))).abs();
             if vat_diff < boundary {
                 return rate;
             }
@@ -114,7 +114,10 @@ impl MoneyWithVAT {
                 amount: rounded_net,
             },
             tax: Money {
-                amount: decimal_add(self.get_gross().round(Some(2)).amount, -rounded_net),
+                amount: decimal_add(
+                    self.get_gross().round(Some(2)).amount,
+                    decimal_neg(rounded_net),
+                ),
             },
         };
     }
@@ -127,10 +130,7 @@ impl MoneyWithVAT {
     }
 
     fn __str__(&self) -> String {
-        format!(
-            "MoneyWithVAT(net='{}', tax='{}')",
-            self.net.amount, self.tax.amount
-        )
+        self.__repr__()
     }
 
     fn __repr__(&self) -> String {
@@ -196,16 +196,22 @@ impl MoneyWithVAT {
         if let Ok(other_money_with_vat) = other.extract::<Self>() {
             Ok(Self {
                 net: Money {
-                    amount: decimal_add(self.net.amount, -other_money_with_vat.net.amount),
+                    amount: decimal_add(
+                        self.net.amount,
+                        decimal_neg(other_money_with_vat.net.amount),
+                    ),
                 },
                 tax: Money {
-                    amount: decimal_add(self.tax.amount, -other_money_with_vat.tax.amount),
+                    amount: decimal_add(
+                        self.tax.amount,
+                        decimal_neg(other_money_with_vat.tax.amount),
+                    ),
                 },
             })
         } else if let Ok(other_decimal) = get_decimal(other) {
             Ok(Self {
                 net: Money {
-                    amount: decimal_add(self.net.amount, -other_decimal),
+                    amount: decimal_add(self.net.amount, decimal_neg(other_decimal)),
                 },
                 tax: self.tax.clone(),
             })
@@ -224,7 +230,7 @@ impl MoneyWithVAT {
                 tax: Money {
                     amount: decimal_add(
                         decimal_mult(other_ratio.gross_ratio, self.get_gross().amount),
-                        -net_value,
+                        decimal_neg(net_value),
                     ),
                 },
             })
@@ -336,7 +342,7 @@ impl MoneyWithVAT {
                         amount: true_max_net,
                     },
                     tax: Money {
-                        amount: decimal_add(true_max_gross, -true_max_net),
+                        amount: decimal_add(true_max_gross, decimal_neg(true_max_net)),
                     },
                 })
             } else {
@@ -654,7 +660,7 @@ fn json_to_money_vat(raw: Option<Bound<PyAny>>) -> PyResult<MoneyWithVAT> {
             (Ok(net), Ok(gross)) => Ok(MoneyWithVAT {
                 net: Money { amount: net },
                 tax: Money {
-                    amount: decimal_add(gross, -net),
+                    amount: decimal_add(gross, decimal_neg(net)),
                 },
             }),
             _ => Err(PyValueError::new_err("Invalid dict")),

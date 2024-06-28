@@ -46,27 +46,12 @@ impl Money {
     #[pyo3(signature = (n=None))]
     pub fn round(&self, n: Option<i32>) -> Self {
         Self {
-            amount: round(
-                self.amount,
-                if let Some(true_n) = n { true_n } else { 0 },
-                false,
-            ),
-        }
-    }
-
-    #[pyo3(signature = (n=None))]
-    pub fn round_up(&self, n: Option<i32>) -> Self {
-        Self {
-            amount: round(
-                self.amount,
-                if let Some(true_n) = n { true_n } else { 0 },
-                true,
-            ),
+            amount: round(self.amount, if let Some(true_n) = n { true_n } else { 0 }),
         }
     }
 
     fn __str__(&self) -> String {
-        format!("Money('{}')", self.amount)
+        self.__repr__()
     }
 
     fn __repr__(&self) -> String {
@@ -81,7 +66,7 @@ impl Money {
 
     pub fn __neg__(&self) -> Self {
         Self {
-            amount: -self.amount,
+            amount: decimal_neg(self.amount),
         }
     }
 
@@ -308,7 +293,7 @@ pub fn sum_(elems: Bound<PyAny>) -> PyResult<Money> {
     for elem in iterator {
         if let Ok(item) = elem {
             if let Ok(Some(value)) = item.extract::<Option<Money>>() {
-                amount += value.amount;
+                amount = decimal_add(amount, value.amount);
             }
         }
     }

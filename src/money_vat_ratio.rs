@@ -4,7 +4,7 @@ use pyo3::types::{PyCFunction, PyDict, PyTuple};
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 
-use crate::decimals::{decimal_add, decimal_div, decimal_mult, get_decimal};
+use crate::decimals::*;
 
 #[pyclass]
 #[derive(Debug, Clone)]
@@ -17,19 +17,17 @@ pub struct MoneyWithVATRatio {
 impl MoneyWithVATRatio {
     #[new]
     fn new(net_ratio: Bound<PyAny>, gross_ratio: Bound<PyAny>) -> PyResult<Self> {
-        let net_ratio_decimal = match get_decimal(net_ratio) {
-            Ok(decimal) => decimal,
-            Err(_) => return Err(PyValueError::new_err("Invalid decimal")),
-        };
-        let gross_ratio_decimal = match get_decimal(gross_ratio) {
-            Ok(decimal) => decimal,
-            Err(_) => return Err(PyValueError::new_err("Invalid decimal")),
-        };
+        let net_ratio_result = get_decimal(net_ratio);
+        let gross_ratio_result = get_decimal(gross_ratio);
 
-        Ok(Self {
-            net_ratio: net_ratio_decimal,
-            gross_ratio: gross_ratio_decimal,
-        })
+        match (net_ratio_result, gross_ratio_result) {
+            (Ok(net_ratio_decimal), Ok(gross_ratio_decimal)) => Ok(Self {
+                net_ratio: net_ratio_decimal,
+                gross_ratio: gross_ratio_decimal,
+            }),
+            (Err(err), _) => Err(err),
+            (_, Err(err)) => Err(err),
+        }
     }
 
     #[getter(net_ratio)]
@@ -43,10 +41,7 @@ impl MoneyWithVATRatio {
     }
 
     fn __str__(&self) -> String {
-        format!(
-            "MoneyWithVATRatio(net_ratio='{}', gross_ratio='{}')",
-            self.net_ratio, self.gross_ratio
-        )
+        self.__repr__()
     }
 
     fn __repr__(&self) -> String {
@@ -58,8 +53,8 @@ impl MoneyWithVATRatio {
 
     fn __neg__(&self) -> Self {
         Self {
-            net_ratio: -self.net_ratio,
-            gross_ratio: -self.gross_ratio,
+            net_ratio: decimal_neg(self.net_ratio),
+            gross_ratio: decimal_neg(self.gross_ratio),
         }
     }
 
@@ -72,8 +67,8 @@ impl MoneyWithVATRatio {
 
     fn __sub__(&self, other: Self) -> Self {
         Self {
-            net_ratio: decimal_add(self.net_ratio, -other.net_ratio),
-            gross_ratio: decimal_add(self.gross_ratio, -other.gross_ratio),
+            net_ratio: decimal_add(self.net_ratio, decimal_neg(other.net_ratio)),
+            gross_ratio: decimal_add(self.gross_ratio, decimal_neg(other.gross_ratio)),
         }
     }
 

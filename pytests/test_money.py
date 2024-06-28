@@ -109,34 +109,17 @@ def test_ne():
     assert Money(Decimal("1000000")) != x
 
 
-@pytest.mark.parametrize(
-    "decimal",
-    [
-        Decimal("0"),
-        Decimal("-0"),
-        -Decimal("0"),
-        -1 * Decimal("0"),
-        "-0",
-    ],
-)
-def test_minus_zero(decimal):
-    assert str(Money(decimal).amount) == str(Decimal(decimal))
+OPERANDS = {func(item) for item in ["0", "-0", "1", "-1"] for func in [Decimal, int]}
 
 
-@pytest.mark.parametrize(
-    "decimal",
-    [
-        Money("-0"),
-        -Money("0"),
-        -1 * Money("0"),
-        Money("0") * -1,
-    ],
-)
-def test_advanced_negation(decimal):
-    assert str(Money(decimal).amount) == "-0"
+@pytest.mark.parametrize("right", OPERANDS)
+def test_negation_with_operands(right):
+    expected = -Decimal(right)
 
+    money_right = Money(right)
 
-OPERANDS = [func(item) for item in ["0", "-0", "1", "-1"] for func in [Decimal, int]]
+    assert str(money_right.amount) == str(right)
+    assert str((-money_right).amount) == str(expected)
 
 
 @pytest.mark.parametrize("left", OPERANDS)
@@ -250,16 +233,11 @@ def test_round():
     assert x.round(4) == Money("1234.3357")
 
 
-def test_round_up_down():
+def test_round_even():
     x = Money("2.5")
     assert x.round(0) == Money(2)
     x = Money("3.5")
     assert x.round(0) == Money(4)
-
-    x = Money("2.5")
-    assert x.round_up(0) == Money(3)
-    x = Money("3.5")
-    assert x.round_up(0) == Money(4)
 
 
 def test_bool():

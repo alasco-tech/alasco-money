@@ -21,6 +21,15 @@ pub fn get_decimal(obj: Bound<PyAny>) -> PyResult<Decimal> {
     }
 }
 
+// Negates decimals the way of Python
+pub fn decimal_neg(right: Decimal) -> Decimal {
+    if right == Decimal::new(-0, 0) {
+        Decimal::new(0, 0)
+    } else {
+        -right
+    }
+}
+
 // Adds decimals the way of Python
 pub fn decimal_add(left: Decimal, right: Decimal) -> Decimal {
     let zero = Decimal::new(0, 0);
@@ -67,15 +76,9 @@ pub fn decimal_div(left: Decimal, right: Decimal) -> Decimal {
 }
 
 // Rounds decimals the way of Python
-pub fn round(value: Decimal, scale: i32, round_up: bool) -> Decimal {
-    let strategy = if round_up {
-        RoundingStrategy::MidpointAwayFromZero
-    } else {
-        RoundingStrategy::MidpointNearestEven
-    };
-
+pub fn round(value: Decimal, scale: i32) -> Decimal {
     if scale >= 0 {
-        return value.round_dp_with_strategy(scale as u32, strategy);
+        return value.round_dp_with_strategy(scale as u32, RoundingStrategy::MidpointNearestEven);
     }
 
     let factor = Decimal::new(10_i64.pow((-scale) as u32), 0);
