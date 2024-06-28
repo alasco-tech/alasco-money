@@ -23,9 +23,7 @@ impl Money {
     pub fn new(amount: Option<Bound<PyAny>>) -> PyResult<Self> {
         if let Some(obj) = amount {
             if let Ok(money) = obj.extract::<Self>() {
-                Ok(Self {
-                    amount: money.amount.clone(),
-                })
+                Ok(money)
             } else if let Ok(decimal) = get_decimal(obj) {
                 Ok(Self { amount: decimal })
             } else {
