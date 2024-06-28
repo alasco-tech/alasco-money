@@ -9,7 +9,10 @@ use crate::decimals::*;
 #[pyclass]
 #[derive(Debug, Clone)]
 pub struct MoneyWithVATRatio {
+    #[pyo3(get)]
     pub net_ratio: Decimal,
+
+    #[pyo3(get)]
     pub gross_ratio: Decimal,
 }
 
@@ -28,16 +31,6 @@ impl MoneyWithVATRatio {
             (Err(err), _) => Err(err),
             (_, Err(err)) => Err(err),
         }
-    }
-
-    #[getter(net_ratio)]
-    fn get_net_ratio(&self) -> Decimal {
-        self.net_ratio
-    }
-
-    #[getter(gross_ratio)]
-    fn get_gross_ratio(&self) -> Decimal {
-        self.gross_ratio
     }
 
     fn __str__(&self) -> String {
@@ -101,8 +94,7 @@ impl MoneyWithVATRatio {
     }
 
     fn __eq__(&self, other: Self) -> bool {
-        self.get_net_ratio() == other.get_net_ratio()
-            && self.get_gross_ratio() == other.get_gross_ratio()
+        self.net_ratio == other.net_ratio && self.gross_ratio == other.gross_ratio
     }
 
     fn for_json(&self) -> PyResult<PyObject> {

@@ -22,7 +22,10 @@ const GERMAN_VAT_RATES: [i16; 5] = [0, 5, 7, 16, 19];
 #[pyclass(subclass)]
 #[derive(Debug, Clone)]
 pub struct MoneyWithVAT {
+    #[pyo3(get)]
     pub net: Money,
+
+    #[pyo3(get)]
     pub tax: Money,
 }
 
@@ -42,16 +45,6 @@ impl MoneyWithVAT {
             (Err(err), _) => Err(err),
             (_, Err(err)) => Err(err),
         }
-    }
-
-    #[getter(net)]
-    fn get_net(&self) -> Money {
-        self.net.clone()
-    }
-
-    #[getter(tax)]
-    fn get_tax(&self) -> Money {
-        self.tax.clone()
     }
 
     #[getter(gross)]
@@ -341,9 +334,9 @@ impl MoneyWithVAT {
             if let Ok(raw_value) = item {
                 if let Ok(value) = raw_value.extract::<MoneyWithVAT>() {
                     max_net = Some(if let Some(true_max_net) = max_net {
-                        true_max_net.max(value.get_net().amount)
+                        true_max_net.max(value.net.amount)
                     } else {
-                        value.get_net().amount
+                        value.net.amount
                     });
                     max_gross = Some(if let Some(true_max_gross) = max_gross {
                         true_max_gross.max(value.get_gross().amount)

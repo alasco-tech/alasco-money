@@ -13,6 +13,7 @@ pub const MONEY_PRECISION: Option<i32> = Some(12);
 #[pyclass(subclass)]
 #[derive(Debug, Clone)]
 pub struct Money {
+    #[pyo3(get)]
     pub amount: Decimal,
 }
 
@@ -34,11 +35,6 @@ impl Money {
                 amount: Decimal::new(0, 0),
             })
         }
-    }
-
-    #[getter(amount)]
-    fn get_amount(&self) -> Decimal {
-        self.amount
     }
 
     #[pyo3(signature = (n=None))]
