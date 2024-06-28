@@ -38,7 +38,7 @@ impl MoneyWithVAT {
         let tax_result = Money::new(tax);
 
         match (net_result, tax_result) {
-            (Ok(net_money), Ok(tax_money)) => Ok(MoneyWithVAT {
+            (Ok(net_money), Ok(tax_money)) => Ok(Self {
                 net: net_money,
                 tax: tax_money,
             }),
@@ -349,7 +349,7 @@ impl MoneyWithVAT {
 
         if let Some(true_max_net) = max_net {
             if let Some(true_max_gross) = max_gross {
-                Ok(MoneyWithVAT {
+                Ok(Self {
                     net: Money {
                         amount: true_max_net,
                     },
@@ -391,7 +391,7 @@ impl MoneyWithVAT {
         let fixed_dividend = if let Some(true_dividend) = dividend {
             true_dividend.rounded_to_cents()
         } else {
-            MoneyWithVAT {
+            Self {
                 net: Money {
                     amount: Decimal::new(0, 0),
                 },
@@ -403,7 +403,7 @@ impl MoneyWithVAT {
         let fixed_divisor = if let Some(true_divisor) = divisor {
             true_divisor.rounded_to_cents()
         } else {
-            MoneyWithVAT {
+            Self {
                 net: Money {
                     amount: Decimal::new(0, 0),
                 },
@@ -439,7 +439,7 @@ impl MoneyWithVAT {
                 if true_divisor == Decimal::new(0, 0) {
                     None
                 } else {
-                    Some(MoneyWithVAT {
+                    Some(Self {
                         net: Money {
                             amount: decimal_div(true_dividend.net.amount, true_divisor),
                         },
@@ -472,7 +472,7 @@ impl MoneyWithVAT {
             }
         }
 
-        Ok(MoneyWithVAT {
+        Ok(Self {
             net: Money { amount: net_sum },
             tax: Money { amount: tax_sum },
         })
@@ -500,7 +500,7 @@ impl MoneyWithVAT {
         if !any_value {
             Ok(None)
         } else {
-            Ok(Some(MoneyWithVAT {
+            Ok(Some(Self {
                 net: Money { amount: net_sum },
                 tax: Money { amount: tax_sum },
             }))

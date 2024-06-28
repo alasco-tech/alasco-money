@@ -200,7 +200,7 @@ impl Money {
         if let Ok(money) = value.extract::<Self>() {
             return Ok(money);
         } else if let Ok(decimal) = value.extract::<Decimal>() {
-            return Ok(Money { amount: decimal });
+            return Ok(Self { amount: decimal });
         }
 
         Err(PyValueError::new_err("Validation error"))
