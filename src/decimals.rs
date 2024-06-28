@@ -16,11 +16,6 @@ pub fn get_decimal(obj: Bound<PyAny>) -> PyResult<Decimal> {
         Ok(amount)
     } else if let Ok(f) = obj.extract::<f64>() {
         Ok(Decimal::from_f64(f).unwrap())
-    } else if let Ok(s) = obj.extract::<&str>() {
-        match s {
-            "NaN" => Ok(Decimal::new(0, 0)),
-            _ => Err(PyValueError::new_err("Invalid decimal")),
-        }
     } else {
         Err(PyValueError::new_err("Invalid decimal"))
     }
