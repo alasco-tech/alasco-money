@@ -5,7 +5,7 @@ use rust_decimal::{Decimal, RoundingStrategy};
 
 use crate::money::Money;
 
-pub fn get_decimal(obj: Bound<PyAny>) -> PyResult<Decimal> {
+pub fn decimal_extract(obj: Bound<PyAny>) -> PyResult<Decimal> {
     if let Ok(_) = obj.extract::<Money>() {
         Err(PyValueError::new_err("Invalid decimal"))
     } else if let Ok(mut amount) = obj.extract::<Decimal>() {
@@ -76,7 +76,7 @@ pub fn decimal_div(left: Decimal, right: Decimal) -> Decimal {
 }
 
 // Rounds decimals the way of Python
-pub fn round(value: Decimal, scale: i32) -> Decimal {
+pub fn decimal_round(value: Decimal, scale: i32) -> Decimal {
     if scale >= 0 {
         return value.round_dp_with_strategy(scale as u32, RoundingStrategy::MidpointNearestEven);
     }

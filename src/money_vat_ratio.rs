@@ -17,8 +17,8 @@ pub struct MoneyWithVATRatio {
 impl MoneyWithVATRatio {
     #[new]
     fn new(net_ratio: Bound<PyAny>, gross_ratio: Bound<PyAny>) -> PyResult<Self> {
-        let net_ratio_result = get_decimal(net_ratio);
-        let gross_ratio_result = get_decimal(gross_ratio);
+        let net_ratio_result = decimal_extract(net_ratio);
+        let gross_ratio_result = decimal_extract(gross_ratio);
 
         match (net_ratio_result, gross_ratio_result) {
             (Ok(net_ratio_decimal), Ok(gross_ratio_decimal)) => Ok(Self {
@@ -82,7 +82,7 @@ impl MoneyWithVATRatio {
     }
 
     fn __truediv__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(other_decimal) = get_decimal(other) {
+        if let Ok(other_decimal) = decimal_extract(other) {
             if other_decimal == Decimal::new(0, 0) {
                 Err(pyo3::exceptions::PyZeroDivisionError::new_err(
                     "Division by zero",

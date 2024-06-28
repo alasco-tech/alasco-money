@@ -24,7 +24,7 @@ impl Money {
         if let Some(obj) = amount {
             if let Ok(money) = obj.extract::<Self>() {
                 Ok(money)
-            } else if let Ok(decimal) = get_decimal(obj) {
+            } else if let Ok(decimal) = decimal_extract(obj) {
                 Ok(Self { amount: decimal })
             } else {
                 Err(PyValueError::new_err("Invalid type"))
@@ -44,7 +44,7 @@ impl Money {
     #[pyo3(signature = (n=None))]
     pub fn round(&self, n: Option<i32>) -> Self {
         Self {
-            amount: round(self.amount, if let Some(true_n) = n { true_n } else { 0 }),
+            amount: decimal_round(self.amount, if let Some(true_n) = n { true_n } else { 0 }),
         }
     }
 
@@ -79,7 +79,7 @@ impl Money {
             Ok(Self {
                 amount: decimal_add(self.amount, other_money.amount),
             })
-        } else if let Ok(other_decimal) = get_decimal(other) {
+        } else if let Ok(other_decimal) = decimal_extract(other) {
             Ok(Self {
                 amount: decimal_add(self.amount, other_decimal),
             })
@@ -99,7 +99,7 @@ impl Money {
             Ok(Self {
                 amount: decimal_add(self.amount, -other_money.amount),
             })
-        } else if let Ok(other_decimal) = get_decimal(other) {
+        } else if let Ok(other_decimal) = decimal_extract(other) {
             Ok(Self {
                 amount: decimal_add(self.amount, -other_decimal),
             })
@@ -115,7 +115,7 @@ impl Money {
     }
 
     fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        if let Ok(other_decimal) = get_decimal(other) {
+        if let Ok(other_decimal) = decimal_extract(other) {
             Ok(Self {
                 amount: decimal_mult(self.amount, other_decimal),
             })
@@ -140,7 +140,7 @@ impl Money {
                 } else {
                     Ok((decimal_div(self.amount, other_money.amount)).into_py(py))
                 }
-            } else if let Ok(other_decimal) = get_decimal(other) {
+            } else if let Ok(other_decimal) = decimal_extract(other) {
                 if other_decimal == Decimal::new(0, 0) {
                     Err(pyo3::exceptions::PyZeroDivisionError::new_err(
                         "Division by zero",
@@ -169,7 +169,7 @@ impl Money {
         Python::with_gil(|py| {
             if let Ok(other_money) = other.extract::<Self>() {
                 Ok((decimal_div(other_money.amount, self.amount)).into_py(py))
-            } else if let Ok(other_decimal) = get_decimal(other) {
+            } else if let Ok(other_decimal) = decimal_extract(other) {
                 Ok(Self {
                     amount: decimal_div(other_decimal, self.amount),
                 }

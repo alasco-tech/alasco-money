@@ -193,7 +193,7 @@ impl MoneyWithVAT {
                     amount: decimal_add(self.tax.amount, other_money_with_vat.tax.amount),
                 },
             })
-        } else if let Ok(other_decimal) = get_decimal(other) {
+        } else if let Ok(other_decimal) = decimal_extract(other) {
             Ok(Self {
                 net: Money {
                     amount: decimal_add(self.net.amount, other_decimal),
@@ -227,7 +227,7 @@ impl MoneyWithVAT {
                     ),
                 },
             })
-        } else if let Ok(other_decimal) = get_decimal(other) {
+        } else if let Ok(other_decimal) = decimal_extract(other) {
             Ok(Self {
                 net: Money {
                     amount: decimal_add(self.net.amount, decimal_neg(other_decimal)),
@@ -253,7 +253,7 @@ impl MoneyWithVAT {
                     ),
                 },
             })
-        } else if let Ok(other_decimal) = get_decimal(other) {
+        } else if let Ok(other_decimal) = decimal_extract(other) {
             Ok(Self {
                 net: Money {
                     amount: decimal_mult(self.net.amount, other_decimal),
@@ -274,7 +274,7 @@ impl MoneyWithVAT {
     }
 
     fn __truediv__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        let other_decimal = match get_decimal(other) {
+        let other_decimal = match decimal_extract(other) {
             Ok(decimal) => decimal,
             Err(_) => return Err(pyo3::exceptions::PyTypeError::new_err("Invalid decimal")),
         };
@@ -296,7 +296,7 @@ impl MoneyWithVAT {
     }
 
     fn __rtruediv__(&self, other: Bound<PyAny>) -> PyResult<Self> {
-        let other_decimal = match get_decimal(other) {
+        let other_decimal = match decimal_extract(other) {
             Ok(decimal) => decimal,
             Err(_) => return Err(pyo3::exceptions::PyTypeError::new_err("Invalid decimal")),
         };
