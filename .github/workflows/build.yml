@@ -3,7 +3,7 @@
 #
 #    maturin generate-ci github
 #
-name: Test build process
+name: build
 
 on:
   push:

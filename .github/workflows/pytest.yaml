@@ -1,4 +1,4 @@
-name: Test Rust-Python Integration
+name: pytest
 
 on:
   push:
