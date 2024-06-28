@@ -11,8 +11,13 @@ use crate::decimals::*;
 use crate::money::{Money, MONEY_PRECISION};
 use crate::money_vat_ratio::MoneyWithVATRatio;
 
-const GERMAN_VAT_RATES: [i16; 5] = [0, 5, 7, 16, 19];
+/// Known VAT rates in countries
+/// Germany (0.19, 0.16, 0.07, 0.05)
+/// Austria (0.20, 0.13, 0.10),
+/// Denmark (0.25)
 const KNOWN_VAT_RATES: [i16; 9] = [0, 5, 7, 10, 13, 16, 19, 20, 25];
+
+const GERMAN_VAT_RATES: [i16; 5] = [0, 5, 7, 16, 19];
 
 #[pyclass(subclass)]
 #[derive(Debug, Clone)]
@@ -65,6 +70,9 @@ impl MoneyWithVAT {
         }
     }
 
+    /// Tax rate as decimal which is rounded to nearest known "real" VAT ratio
+    /// if applicable (19.01 ==> 19.00; but not 23 ==> 19)
+    /// ATTENTION: Don't use the result of this for calculations!
     #[getter(tax_rate_for_display)]
     fn get_tax_rate_for_display(&self) -> Decimal {
         let boundary = Decimal::from_str("0.05").unwrap();
@@ -107,6 +115,14 @@ impl MoneyWithVAT {
         self.is_equal_up_to_cents(other.clone()) || self.is_lower_up_to_cents(other.clone())
     }
 
+    /// Use with caution - only intended for displaying money or before comparing exact amounts with user input.
+    /// Effects of rounding money to cents include:
+    ///     (a) the .tax_rate is no longer accurate (e.g. 0.1882 instead of 0.19)
+    ///     (b) the .tax can differ from the rounded tax of the original values
+    ///         (e.g. with net=4.444 & tax=2.222 the displayed tax is 2.22 EUR, but after .round_to_cents
+    ///             on net=4.44 & tax=2.23 so as to keep gross stable in 6.67 EUR)
+    ///     (c) Comparing them later to their exact counterparts returns False
+    ///     (d) Ratios formed from rounded amounts no longer add to 100%
     fn rounded_to_cents(&self) -> Self {
         let rounded_net = self.net.round(Some(2)).amount;
         return Self {
@@ -122,6 +138,9 @@ impl MoneyWithVAT {
         };
     }
 
+    /// When storing Money, values are implicitly rounded to the field precision,
+    /// which is lower than normal decimal precision.
+    /// This method returns an equivalently rounded value for comparison.
     fn rounded_to_money_field_precision(&self) -> Self {
         Self {
             net: self.net.round(MONEY_PRECISION),
@@ -466,6 +485,7 @@ impl MoneyWithVAT {
         })
     }
 
+    /// This is a variation of fast_sum, that returns None if only None values are given.
     #[staticmethod]
     fn fast_sum_with_none(iterable: Bound<PyAny>) -> PyResult<Option<Self>> {
         let iterator = PyIterator::from_bound_object(&iterable)?;

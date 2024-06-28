@@ -284,6 +284,7 @@ impl Money {
 }
 
 #[pyfunction]
+/// Sums Money elements while ignoring None values. Is ok with empty lists/iterables.
 pub fn sum_(elems: Bound<PyAny>) -> PyResult<Money> {
     let iterator = PyIterator::from_bound_object(&elems)?;
     let mut amount: Decimal = Decimal::new(0, 0);
