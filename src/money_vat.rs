@@ -187,12 +187,20 @@ impl MoneyWithVAT {
                 },
             })
         } else if let Ok(other_decimal) = decimal_extract(other) {
-            Ok(Self {
-                net: Money {
-                    amount: decimal_add(self.net.amount, other_decimal),
-                },
-                tax: self.tax.clone(),
-            })
+            if other_decimal == Decimal::new(0, 0) {
+                Ok(Self {
+                    net: Money {
+                        amount: decimal_add(self.net.amount, other_decimal),
+                    },
+                    tax: Money {
+                        amount: decimal_add(self.tax.amount, other_decimal),
+                    },
+                })
+            } else {
+                Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Unsupported operand",
+                ))
+            }
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Unsupported operand",
@@ -221,17 +229,29 @@ impl MoneyWithVAT {
                 },
             })
         } else if let Ok(other_decimal) = decimal_extract(other) {
-            Ok(Self {
-                net: Money {
-                    amount: decimal_add(self.net.amount, decimal_neg(other_decimal)),
-                },
-                tax: self.tax.clone(),
-            })
+            if other_decimal == Decimal::new(0, 0) {
+                Ok(Self {
+                    net: Money {
+                        amount: decimal_add(self.net.amount, decimal_neg(other_decimal)),
+                    },
+                    tax: Money {
+                        amount: decimal_add(self.tax.amount, decimal_neg(other_decimal)),
+                    },
+                })
+            } else {
+                Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Unsupported operand",
+                ))
+            }
         } else {
             Err(pyo3::exceptions::PyTypeError::new_err(
                 "Unsupported operand",
             ))
         }
+    }
+
+    fn __rsub__(&self, other: Bound<PyAny>) -> PyResult<Self> {
+        self.__neg__().__add__(other)
     }
 
     fn __mul__(&self, other: Bound<PyAny>) -> PyResult<Self> {

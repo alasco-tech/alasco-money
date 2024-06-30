@@ -82,6 +82,39 @@ def test_add(first, second, result):
 
 
 @_pytest.mark.parametrize(
+    "other, should_fail",
+    [
+        (0, False),
+        (0.000, False),
+        (1, True),
+        (0.01, True),
+        (_decimal.Decimal("0"), False),
+        (_decimal.Decimal("-1"), True),
+        (_decimal.Decimal("1"), True),
+        (_money.Money(), True),
+        (_money.Money("1"), True),
+    ],
+)
+def test_add_non_money_vat(other, should_fail):
+    this = _money.MoneyWithVAT(1, 1)
+
+    if should_fail:
+        with _pytest.raises(TypeError):
+            this + other
+        with _pytest.raises(TypeError):
+            other + this
+        with _pytest.raises(TypeError):
+            this - other
+        with _pytest.raises(TypeError):
+            other - this
+    else:
+        this + other
+        other + this
+        this - other
+        other - this
+
+
+@_pytest.mark.parametrize(
     "first, second, result",
     [
         (
