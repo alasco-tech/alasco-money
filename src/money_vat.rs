@@ -458,24 +458,23 @@ impl MoneyWithVAT {
 
     #[staticmethod]
     fn fast_sum(iterable: Bound<PyAny>) -> PyResult<Self> {
-        let iterator = PyIterator::from_bound_object(&iterable)?;
-
-        let mut net_sum = Decimal::new(0, 0);
-        let mut tax_sum = Decimal::new(0, 0);
-
-        for elem in iterator {
-            if let Ok(item) = elem {
-                if let Ok(value) = item.extract::<Self>() {
-                    net_sum = decimal_add(net_sum, value.net.amount);
-                    tax_sum = decimal_add(tax_sum, value.tax.amount);
+        match Self::fast_sum_with_none(iterable) {
+            Ok(sum) => {
+                if let Some(value) = sum {
+                    Ok(value)
+                } else {
+                    Ok(Self {
+                        net: Money {
+                            amount: Decimal::new(0, 0),
+                        },
+                        tax: Money {
+                            amount: Decimal::new(0, 0),
+                        },
+                    })
                 }
             }
+            Err(err) => Err(err),
         }
-
-        Ok(Self {
-            net: Money { amount: net_sum },
-            tax: Money { amount: tax_sum },
-        })
     }
 
     /// This is a variation of fast_sum, that returns None if only None values are given.
