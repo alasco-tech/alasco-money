@@ -26,6 +26,13 @@ def test_init_float():
     assert one_million_dollars.amount == Decimal("1000000")
 
 
+@pytest.mark.parametrize("value", ["0E-29", "0e+30"])
+def test_init_scientific(value):
+    money = Money(value)
+
+    assert money.amount == Decimal(value)
+
+
 def test_repr():
     assert repr(Money(Decimal("1000000"))) == "Money('1000000')"
     assert repr(Money(Decimal("2.000"))) == "Money('2.000')"

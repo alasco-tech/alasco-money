@@ -1,5 +1,6 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use regex::Regex;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::{Decimal, RoundingStrategy};
 
@@ -16,6 +17,13 @@ pub fn decimal_extract(obj: Bound<PyAny>) -> PyResult<Decimal> {
         Ok(amount)
     } else if let Ok(f) = obj.extract::<f64>() {
         Ok(Decimal::from_f64(f).unwrap())
+    } else if let Ok(s) = obj.extract::<&str>() {
+        let re = Regex::new(r"^0(\.0+)?[eE][+-]\d+$").unwrap();
+        if re.is_match(s) {
+            Ok(Decimal::new(0, 0))
+        } else {
+            Err(PyValueError::new_err("Invalid decimal"))
+        }
     } else {
         Err(PyValueError::new_err("Invalid decimal"))
     }
