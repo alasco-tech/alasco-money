@@ -8,8 +8,8 @@ classifiers = [
 ]
 dynamic = ["version"]
 
-[project.optional-dependencies]
-dev = ["maturin", "pytest", "pydantic"]
+[tool.uv]
+dev-dependencies = ["maturin", "pytest", "pydantic"]
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
