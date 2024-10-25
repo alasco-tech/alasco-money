@@ -5,7 +5,11 @@
 ## Contributing
 
 - [Install Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
-- Create a new Python environment and activate it
-- Install Python dependencies: `pip install ".[dev]"`
+- `uv sync`
 - Play with the code
 - Run tests: `maturin develop && pytest`
+
+### Releasing a new version
+ - Update the version in `Cargo.toml`
+ - Tag the correponding `main` commit with `v${version}`
+ - Wait for the release to be created by CI
