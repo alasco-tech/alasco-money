@@ -97,7 +97,8 @@ impl MoneyWithVAT {
     }
 
     fn is_equal_up_to_cents(&self, other: Self) -> bool {
-        self.get_gross().round(Some(2)).amount == other.get_gross().round(Some(2)).amount
+        self.net.round(Some(2)).amount == other.net.round(Some(2)).amount &&
+        self.tax.round(Some(2)).amount == other.tax.round(Some(2)).amount
     }
 
     fn is_lower_up_to_cents(&self, other: Self) -> bool {
@@ -336,8 +337,8 @@ impl MoneyWithVAT {
 
     fn __richcmp__(&self, other: &Self, op: CompareOp) -> bool {
         match op {
-            CompareOp::Eq => self.net.amount.eq(&other.net.amount) && self.tax.amount.eq(&other.tax.amount),
-            CompareOp::Ne => !(self.net.amount.eq(&other.net.amount) && self.tax.amount.eq(&other.tax.amount)),
+            CompareOp::Eq => self.net.amount == other.net.amount && self.tax.amount == other.tax.amount,
+            CompareOp::Ne => !(self.net.amount == other.net.amount && self.tax.amount == other.tax.amount),
             _ => op.matches(self.get_gross().amount.cmp(&other.get_gross().amount)),
         }
     }
