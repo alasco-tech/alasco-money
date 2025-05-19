@@ -336,8 +336,8 @@ impl MoneyWithVAT {
 
     fn __richcmp__(&self, other: &Self, op: CompareOp) -> bool {
         match op {
-            CompareOp::Eq => self.net.amount == other.net.amount && self.tax.amount == other.tax.amount,
-            CompareOp::Ne => !(self.net.amount == other.net.amount && self.tax.amount == other.tax.amount),
+            CompareOp::Eq => self.net.amount.eq(&other.net.amount) && self.tax.amount.eq(&other.tax.amount),
+            CompareOp::Ne => !(self.net.amount.eq(&other.net.amount) && self.tax.amount.eq(&other.tax.amount)),
             _ => op.matches(self.get_gross().amount.cmp(&other.get_gross().amount)),
         }
     }
