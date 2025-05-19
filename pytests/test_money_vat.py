@@ -32,6 +32,33 @@ def test_neg(subject, expected):
 
 
 @_pytest.mark.parametrize(
+    "one, other, expected_equal",
+    [
+        (_money.MoneyWithVAT(50), _money.MoneyWithVAT(30), False),
+        (_money.MoneyWithVAT(50), _money.MoneyWithVAT(50, 0), True),
+        (_money.MoneyWithVAT(1, 3), _money.MoneyWithVAT(3, 1), False),
+        (_money.MoneyWithVAT(100, 100), _money.MoneyWithVAT(100, 100), True),
+        (_money.MoneyWithVAT("0.000"), _money.MoneyWithVAT(0), True),
+    ],
+)
+def test_eq(one, other, expected_equal):
+    assert (one == other) is expected_equal
+
+
+@_pytest.mark.parametrize(
+    "one, other, expected_unequal",
+    [
+        (_money.MoneyWithVAT(50), _money.MoneyWithVAT(30), True),
+        (_money.MoneyWithVAT(50), _money.MoneyWithVAT(50, 0), False),
+        (_money.MoneyWithVAT(1, 3), _money.MoneyWithVAT(3, 1), True),
+        (_money.MoneyWithVAT(100, 100), _money.MoneyWithVAT(100, 100), False),
+        (_money.MoneyWithVAT("0.000"), _money.MoneyWithVAT(0), False),
+    ],
+)
+def test_ne(one, other, expected_unequal):
+    assert (one != other) is expected_unequal
+
+@_pytest.mark.parametrize(
     "subject, expected",
     [
         (_money.MoneyWithVAT(50), _money.MoneyWithVAT(30)),
