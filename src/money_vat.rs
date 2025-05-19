@@ -97,8 +97,7 @@ impl MoneyWithVAT {
     }
 
     fn is_equal_up_to_cents(&self, other: Self) -> bool {
-        self.net.round(Some(2)).amount == other.net.round(Some(2)).amount &&
-        self.tax.round(Some(2)).amount == other.tax.round(Some(2)).amount
+        self.get_gross().round(Some(2)).amount == other.get_gross().round(Some(2)).amount
     }
 
     fn is_lower_up_to_cents(&self, other: Self) -> bool {

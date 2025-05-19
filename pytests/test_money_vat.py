@@ -374,9 +374,6 @@ def test_not_is_equal_up_to_cents():
     assert not _money.MoneyWithVAT("-1.006").is_equal_up_to_cents(
         _money.MoneyWithVAT("-1.004")
     )
-    assert not _money.MoneyWithVAT("1.111").is_equal_up_to_cents(
-        _money.MoneyWithVAT("1", "0.11")
-    )
 
 
 @_pytest.mark.parametrize(
