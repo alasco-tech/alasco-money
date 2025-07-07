@@ -11,5 +11,5 @@
 
 ### Releasing a new version
  - Update the version in `Cargo.toml`
- - Tag the correponding `main` commit with `v${version}`
+ - Tag the corresponding `main` commit with `v${version}`
  - Wait for the release to be created by CI
