@@ -200,8 +200,13 @@ def test_equality_to_other_types():
     assert x != {}
 
 
-def test_not_equal_to_decimal_types():
-    assert Money(Decimal("1000000")) != Decimal("1000000")
+def test_equal_to_decimal_types():
+    assert Money(Decimal("1000000")) == Decimal("1000000")
+    assert Money(Decimal("1000000")) == 1000000
+    assert Money("0") == 0
+    assert Money(0) == 0
+    assert Money(-1) != 0
+    assert Money(-1) == -1
 
 
 def test_lt():

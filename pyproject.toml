@@ -9,7 +9,12 @@ classifiers = [
 dynamic = ["version"]
 
 [tool.uv]
-dev-dependencies = ["maturin", "pytest", "pydantic"]
+dev-dependencies = [
+    "maturin",
+    "pytest",
+    "pydantic",
+    "pip>=25.0.1",
+]
 
 [tool.maturin]
 features = ["pyo3/extension-module"]

@@ -182,8 +182,17 @@ impl Money {
         !self.amount.is_zero()
     }
 
-    fn __richcmp__(&self, other: &Self, op: CompareOp) -> bool {
-        op.matches(self.amount.cmp(&other.amount))
+    fn __richcmp__(&self, other: Bound<PyAny>, op: CompareOp) -> PyResult<bool> {
+        if let Ok(other_money) = other.extract::<Self>() {
+            Ok(op.matches(self.amount.cmp(&other_money.amount)))
+        } else if let Ok(other_decimal) = decimal_extract(other) {
+            Ok(op.matches(self.amount.cmp(&other_decimal)))
+        } else {
+            match op {
+                CompareOp::Ne => Ok(true),
+                _ => Ok(false),
+            }
+        }
     }
 
     pub fn for_json(&self) -> String {
