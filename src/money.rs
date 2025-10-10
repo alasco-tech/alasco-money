@@ -130,9 +130,9 @@ impl Money {
         Python::with_gil(|py| {
             if let Ok(other_money) = other.extract::<Self>() {
                 if other_money.amount == Decimal::new(0, 0) {
-                    return Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                    Err(pyo3::exceptions::PyZeroDivisionError::new_err(
                         "Division by zero",
-                    ));
+                    ))
                 } else {
                     let decimal_result = decimal_div(self.amount, other_money.amount);
                     let py_obj = PyObject::from(decimal_result.into_pyobject(py)?);
@@ -140,9 +140,9 @@ impl Money {
                 }
             } else if let Ok(other_decimal) = decimal_extract(other) {
                 if other_decimal == Decimal::new(0, 0) {
-                    return Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                    Err(pyo3::exceptions::PyZeroDivisionError::new_err(
                         "Division by zero",
-                    ));
+                    ))
                 } else {
                     let money_result = Self {
                         amount: decimal_div(self.amount, other_decimal),
@@ -151,9 +151,9 @@ impl Money {
                     return Ok(py_obj);
                 }
             } else {
-                return Err(pyo3::exceptions::PyTypeError::new_err(
+                Err(pyo3::exceptions::PyTypeError::new_err(
                     "Unsupported operand",
-                ));
+                ))
             }
         })
     }
@@ -177,9 +177,9 @@ impl Money {
                 let py_obj = PyObject::from(money_result.into_pyobject(py)?);
                 return Ok(py_obj);
             } else {
-                return Err(pyo3::exceptions::PyTypeError::new_err(
+                Err(pyo3::exceptions::PyTypeError::new_err(
                     "Unsupported operand",
-                ));
+                ))
             }
         })
     }
