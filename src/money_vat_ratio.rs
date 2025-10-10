@@ -99,7 +99,7 @@ impl MoneyWithVATRatio {
 
     fn for_json(&self) -> PyResult<PyObject> {
         Python::with_gil(|py| {
-            let dict = PyDict::new_bound(py);
+            let dict = PyDict::new(py);
             dict.set_item("net_ratio", self.net_ratio.to_string())?;
             dict.set_item("gross_ratio", self.gross_ratio.to_string())?;
             Ok(dict.into())
@@ -143,21 +143,21 @@ impl MoneyWithVATRatio {
         _handler: Bound<PyAny>,
         py: Python,
     ) -> PyResult<PyObject> {
-        let net_ratio = PyDict::new_bound(py);
+        let net_ratio = PyDict::new(py);
         net_ratio.set_item("title", "Net ratio")?;
         net_ratio.set_item("type", "string")?;
         net_ratio.set_item("example", "0.23")?;
 
-        let gross_ratio = PyDict::new_bound(py);
+        let gross_ratio = PyDict::new(py);
         gross_ratio.set_item("title", "Gross ratio")?;
         gross_ratio.set_item("type", "string")?;
         gross_ratio.set_item("example", "0.23")?;
 
-        let properties = PyDict::new_bound(py);
+        let properties = PyDict::new(py);
         properties.set_item("net_ratio", net_ratio)?;
         properties.set_item("gross_ratio", gross_ratio)?;
 
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         dict.set_item("properties", properties)?;
         dict.set_item("type", "object")?;
 
@@ -171,7 +171,7 @@ impl MoneyWithVATRatio {
         py: Python,
     ) -> PyResult<PyObject> {
         // Define validation function
-        let validate_fn = PyCFunction::new_closure_bound(
+        let validate_fn = PyCFunction::new_closure(
             py,
             None,
             None,
@@ -181,7 +181,7 @@ impl MoneyWithVATRatio {
         )?;
 
         // Define serialization function
-        let serialize_fn = PyCFunction::new_closure_bound(
+        let serialize_fn = PyCFunction::new_closure(
             py,
             None,
             None,
@@ -194,16 +194,16 @@ impl MoneyWithVATRatio {
             },
         )?;
 
-        let function = PyDict::new_bound(py);
+        let function = PyDict::new(py);
         function.set_item("type", "with-info")?;
         function.set_item("function", validate_fn)?;
 
-        let serialization = PyDict::new_bound(py);
+        let serialization = PyDict::new(py);
         serialization.set_item("type", "function-plain")?;
         serialization.set_item("when_used", "json")?;
         serialization.set_item("function", serialize_fn)?;
 
-        let schema = PyDict::new_bound(py);
+        let schema = PyDict::new(py);
         schema.set_item("type", "function-plain")?;
         schema.set_item("function", function)?;
         schema.set_item("serialization", serialization)?;

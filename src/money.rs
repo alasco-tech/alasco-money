@@ -130,27 +130,30 @@ impl Money {
         Python::with_gil(|py| {
             if let Ok(other_money) = other.extract::<Self>() {
                 if other_money.amount == Decimal::new(0, 0) {
-                    Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                    return Err(pyo3::exceptions::PyZeroDivisionError::new_err(
                         "Division by zero",
-                    ))
+                    ));
                 } else {
-                    Ok((decimal_div(self.amount, other_money.amount)).into_py(py))
+                    let decimal_result = decimal_div(self.amount, other_money.amount);
+                    let py_obj = PyObject::from(decimal_result.into_pyobject(py)?);
+                    return Ok(py_obj);
                 }
             } else if let Ok(other_decimal) = decimal_extract(other) {
                 if other_decimal == Decimal::new(0, 0) {
-                    Err(pyo3::exceptions::PyZeroDivisionError::new_err(
+                    return Err(pyo3::exceptions::PyZeroDivisionError::new_err(
                         "Division by zero",
-                    ))
+                    ));
                 } else {
-                    Ok(Self {
+                    let money_result = Self {
                         amount: decimal_div(self.amount, other_decimal),
-                    }
-                    .into_py(py))
+                    };
+                    let py_obj = PyObject::from(money_result.into_pyobject(py)?);
+                    return Ok(py_obj);
                 }
             } else {
-                Err(pyo3::exceptions::PyTypeError::new_err(
+                return Err(pyo3::exceptions::PyTypeError::new_err(
                     "Unsupported operand",
-                ))
+                ));
             }
         })
     }
@@ -164,16 +167,19 @@ impl Money {
 
         Python::with_gil(|py| {
             if let Ok(other_money) = other.extract::<Self>() {
-                Ok((decimal_div(other_money.amount, self.amount)).into_py(py))
+                let decimal_result = decimal_div(other_money.amount, self.amount);
+                let py_obj = PyObject::from(decimal_result.into_pyobject(py)?);
+                return Ok(py_obj);
             } else if let Ok(other_decimal) = decimal_extract(other) {
-                Ok(Self {
+                let money_result = Self {
                     amount: decimal_div(other_decimal, self.amount),
-                }
-                .into_py(py))
+                };
+                let py_obj = PyObject::from(money_result.into_pyobject(py)?);
+                return Ok(py_obj);
             } else {
-                Err(pyo3::exceptions::PyTypeError::new_err(
+                return Err(pyo3::exceptions::PyTypeError::new_err(
                     "Unsupported operand",
-                ))
+                ));
             }
         })
     }
@@ -221,7 +227,7 @@ impl Money {
         _handler: Bound<PyAny>,
         py: Python,
     ) -> PyResult<PyObject> {
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         dict.set_item("example", "123.123456789012")?;
         dict.set_item("type", "string")?;
 
@@ -235,7 +241,7 @@ impl Money {
         py: Python,
     ) -> PyResult<PyObject> {
         // Define validation function
-        let validate_fn = PyCFunction::new_closure_bound(
+        let validate_fn = PyCFunction::new_closure(
             py,
             None,
             None,
@@ -245,7 +251,7 @@ impl Money {
         )?;
 
         // Define serialization function
-        let serialize_fn = PyCFunction::new_closure_bound(
+        let serialize_fn = PyCFunction::new_closure(
             py,
             None,
             None,
@@ -258,16 +264,16 @@ impl Money {
             },
         )?;
 
-        let function = PyDict::new_bound(py);
+        let function = PyDict::new(py);
         function.set_item("type", "with-info")?;
         function.set_item("function", validate_fn)?;
 
-        let serialization = PyDict::new_bound(py);
+        let serialization = PyDict::new(py);
         serialization.set_item("type", "function-plain")?;
         serialization.set_item("when_used", "json")?;
         serialization.set_item("function", serialize_fn)?;
 
-        let schema = PyDict::new_bound(py);
+        let schema = PyDict::new(py);
         schema.set_item("type", "function-plain")?;
         schema.set_item("function", function)?;
         schema.set_item("serialization", serialization)?;
@@ -291,7 +297,7 @@ impl Money {
 #[pyfunction]
 /// Sums Money elements while ignoring None values. Is ok with empty lists/iterables.
 pub fn sum_(elems: Bound<PyAny>) -> PyResult<Money> {
-    let iterator = PyIterator::from_bound_object(&elems)?;
+    let iterator = PyIterator::from_object(&elems)?;
     let mut amount: Decimal = Decimal::new(0, 0);
 
     for elem in iterator {
