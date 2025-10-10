@@ -346,9 +346,9 @@ impl MoneyWithVAT {
     #[pyo3(signature = (*args))]
     fn max(args: &Bound<PyTuple>) -> PyResult<Self> {
         let items = if args.len() == 1 {
-            PyIterator::from_bound_object(&args.get_item(0).unwrap()).unwrap()
+            PyIterator::from_object(&args.get_item(0).unwrap()).unwrap()
         } else {
-            PyIterator::from_bound_object(&args).unwrap()
+            PyIterator::from_object(&args).unwrap()
         };
 
         let mut max_net: Option<Decimal> = None;
@@ -504,7 +504,7 @@ impl MoneyWithVAT {
     /// This is a variation of fast_sum, that returns None if only None values are given.
     #[staticmethod]
     fn fast_sum_with_none(iterable: Bound<PyAny>) -> PyResult<Option<Self>> {
-        let iterator = PyIterator::from_bound_object(&iterable)?;
+        let iterator = PyIterator::from_object(&iterable)?;
 
         let mut net_sum: Decimal = Decimal::new(0, 0);
         let mut tax_sum: Decimal = Decimal::new(0, 0);
@@ -532,7 +532,7 @@ impl MoneyWithVAT {
 
     fn for_json(&self) -> PyResult<PyObject> {
         Python::with_gil(|py| {
-            let dict = PyDict::new_bound(py);
+            let dict = PyDict::new(py);
             dict.set_item("net", self.net.for_json())?;
             dict.set_item("tax", self.tax.for_json())?;
             Ok(dict.into())
@@ -568,21 +568,21 @@ impl MoneyWithVAT {
         _handler: Bound<PyAny>,
         py: Python,
     ) -> PyResult<PyObject> {
-        let net = PyDict::new_bound(py);
+        let net = PyDict::new(py);
         net.set_item("title", "Net amount")?;
         net.set_item("type", "string")?;
         net.set_item("example", "123.123456789012")?;
 
-        let tax = PyDict::new_bound(py);
+        let tax = PyDict::new(py);
         tax.set_item("title", "Tax amount")?;
         tax.set_item("type", "string")?;
         tax.set_item("example", "123.123456789012")?;
 
-        let properties = PyDict::new_bound(py);
+        let properties = PyDict::new(py);
         properties.set_item("net", net)?;
         properties.set_item("tax", tax)?;
 
-        let dict = PyDict::new_bound(py);
+        let dict = PyDict::new(py);
         dict.set_item("properties", properties)?;
         dict.set_item("type", "object")?;
 
@@ -596,7 +596,7 @@ impl MoneyWithVAT {
         py: Python,
     ) -> PyResult<PyObject> {
         // Define validation function
-        let validate_fn = PyCFunction::new_closure_bound(
+        let validate_fn = PyCFunction::new_closure(
             py,
             None,
             None,
@@ -606,7 +606,7 @@ impl MoneyWithVAT {
         )?;
 
         // Define serialization function
-        let serialize_fn = PyCFunction::new_closure_bound(
+        let serialize_fn = PyCFunction::new_closure(
             py,
             None,
             None,
@@ -619,16 +619,16 @@ impl MoneyWithVAT {
             },
         )?;
 
-        let function = PyDict::new_bound(py);
+        let function = PyDict::new(py);
         function.set_item("type", "with-info")?;
         function.set_item("function", validate_fn)?;
 
-        let serialization = PyDict::new_bound(py);
+        let serialization = PyDict::new(py);
         serialization.set_item("type", "function-plain")?;
         serialization.set_item("when_used", "json")?;
         serialization.set_item("function", serialize_fn)?;
 
-        let schema = PyDict::new_bound(py);
+        let schema = PyDict::new(py);
         schema.set_item("type", "function-plain")?;
         schema.set_item("function", function)?;
         schema.set_item("serialization", serialization)?;
