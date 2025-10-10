@@ -1,6 +1,6 @@
 [project]
 name = "alasco-money"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -12,7 +12,7 @@ dynamic = ["version"]
 dev-dependencies = [
     "maturin",
     "pytest",
-    "pydantic",
+    "pydantic>=2.10.6",
     "pip>=25.0.1",
 ]
 
