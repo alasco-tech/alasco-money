@@ -1,8 +1,8 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyCFunction, PyDict, PyTuple};
-use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::FromPrimitive;
 
 use crate::decimals::*;
 
@@ -119,19 +119,16 @@ impl MoneyWithVATRatio {
     fn validate(value: Bound<PyAny>, _info: Option<Bound<PyAny>>) -> PyResult<Self> {
         if let Ok(money_with_vat_ratio) = value.extract::<Self>() {
             return Ok(money_with_vat_ratio);
-        } else if let Ok(dict) = value.extract::<Bound<PyDict>>() {
-            if let Ok(Some(net_ratio)) = dict.get_item("net_ratio") {
-                if let Ok(Some(gross_ratio)) = dict.get_item("gross_ratio") {
-                    if let Ok(true_net_ratio) = net_ratio.extract::<Decimal>() {
-                        if let Ok(true_gross_ratio) = gross_ratio.extract::<Decimal>() {
-                            return Ok(Self {
-                                net_ratio: true_net_ratio,
-                                gross_ratio: true_gross_ratio,
-                            });
-                        }
-                    }
-                }
-            }
+        } else if let Ok(dict) = value.extract::<Bound<PyDict>>()
+            && let Ok(Some(net_ratio)) = dict.get_item("net_ratio")
+            && let Ok(Some(gross_ratio)) = dict.get_item("gross_ratio")
+            && let Ok(true_net_ratio) = net_ratio.extract::<Decimal>()
+            && let Ok(true_gross_ratio) = gross_ratio.extract::<Decimal>()
+        {
+            return Ok(Self {
+                net_ratio: true_net_ratio,
+                gross_ratio: true_gross_ratio,
+            });
         }
 
         Err(PyValueError::new_err("Validation error"))

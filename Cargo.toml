@@ -1,7 +1,7 @@
 [package]
 name = "alasco-money"
 version = "0.2.1"
-edition = "2021"
+edition = "2024"
 
 [lib]
 name = "alasco_money"

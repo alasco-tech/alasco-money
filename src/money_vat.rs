@@ -8,7 +8,7 @@ use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use crate::decimals::*;
-use crate::money::{Money, MONEY_PRECISION};
+use crate::money::{MONEY_PRECISION, Money};
 use crate::money_vat_ratio::MoneyWithVATRatio;
 
 /// Known VAT rates in countries
@@ -544,19 +544,16 @@ impl MoneyWithVAT {
     fn validate(value: Bound<PyAny>, _info: Option<Bound<PyAny>>) -> PyResult<Self> {
         if let Ok(money_with_vat) = value.extract::<Self>() {
             return Ok(money_with_vat);
-        } else if let Ok(dict) = value.extract::<Bound<PyDict>>() {
-            if let Ok(Some(net)) = dict.get_item("net") {
-                if let Ok(Some(tax)) = dict.get_item("tax") {
-                    if let Ok(true_net) = net.extract::<Decimal>() {
-                        if let Ok(true_tax) = tax.extract::<Decimal>() {
-                            return Ok(Self {
-                                net: Money { amount: true_net },
-                                tax: Money { amount: true_tax },
-                            });
-                        }
-                    }
-                }
-            }
+        } else if let Ok(dict) = value.extract::<Bound<PyDict>>()
+            && let Ok(Some(net)) = dict.get_item("net")
+            && let Ok(Some(tax)) = dict.get_item("tax")
+            && let Ok(true_net) = net.extract::<Decimal>()
+            && let Ok(true_tax) = tax.extract::<Decimal>()
+        {
+            return Ok(Self {
+                net: Money { amount: true_net },
+                tax: Money { amount: true_tax },
+            });
         }
 
         Err(PyValueError::new_err("Validation error"))
@@ -670,20 +667,15 @@ impl MoneyWithVAT {
 
 fn json_to_money_vat(raw: Option<Bound<PyAny>>) -> PyResult<MoneyWithVAT> {
     let dig = |any: &Bound<PyAny>, key: &str| {
-        if let Ok(dict) = any.extract::<Bound<PyDict>>() {
-            if let Ok(Some(amount_with_vat)) = dict.get_item("amount_with_vat") {
-                if let Ok(true_amount_with_vat) = amount_with_vat.extract::<Bound<PyDict>>() {
-                    if let Ok(Some(target)) = true_amount_with_vat.get_item(key) {
-                        if let Ok(true_target) = target.extract::<Bound<PyDict>>() {
-                            if let Ok(Some(amount)) = true_target.get_item("amount") {
-                                if let Ok(true_amount) = amount.extract::<Decimal>() {
-                                    return Ok(true_amount);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        if let Ok(dict) = any.extract::<Bound<PyDict>>()
+            && let Ok(Some(amount_with_vat)) = dict.get_item("amount_with_vat")
+            && let Ok(true_amount_with_vat) = amount_with_vat.extract::<Bound<PyDict>>()
+            && let Ok(Some(target)) = true_amount_with_vat.get_item(key)
+            && let Ok(true_target) = target.extract::<Bound<PyDict>>()
+            && let Ok(Some(amount)) = true_target.get_item("amount")
+            && let Ok(true_amount) = amount.extract::<Decimal>()
+        {
+            return Ok(true_amount);
         }
         Err(PyValueError::new_err("Invalid dict"))
     };
