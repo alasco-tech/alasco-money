@@ -8,8 +8,8 @@ classifiers = [
 ]
 dynamic = ["version"]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "maturin",
     "pytest",
     "pydantic>=2.10.6",
@@ -22,3 +22,14 @@ features = ["pyo3/extension-module"]
 [build-system]
 requires = ["maturin>=1.4,<2.0"]
 build-backend = "maturin"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"

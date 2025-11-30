@@ -1,0 +1,54 @@
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-merge-conflict
+      - id: check-toml
+
+  # Rust formatting
+  - repo: local
+    hooks:
+      - id: rustfmt
+        name: rustfmt
+        entry: cargo fmt --all
+        language: system
+        types: [rust]
+        pass_filenames: false
+        always_run: true
+      - id: clippy
+        name: clippy
+        entry: cargo clippy --all-targets --message-format=short -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+        always_run: true
+
+  # Typo checking
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.39.2
+    hooks:
+      - id: typos
+
+  # Python linting
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check --fix
+        language: python
+        types: [python]
+        additional_dependencies:
+          - ruff>=0.14.0
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format
+        language: python
+        types: [python]
+        additional_dependencies:
+          - ruff>=0.14.0

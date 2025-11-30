@@ -1,0 +1,25 @@
+[tools]
+rust = "stable"
+prek = "latest"
+python = "3.13"
+uv = "latest"
+
+[env]
+RUST_BACKTRACE = "1"
+
+[tasks.install]
+description = "Install dependencies"
+run = """
+cargo fetch
+cargo install cargo-bump --locked || true
+uv sync --frozen
+"""
+
+[tasks.test]
+description = "Run Python tests"
+depends = ["install"]
+run = """
+source .venv/bin/activate
+maturin develop
+pytest
+"""
