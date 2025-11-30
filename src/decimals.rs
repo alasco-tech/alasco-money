@@ -7,7 +7,7 @@ use rust_decimal::{Decimal, RoundingStrategy};
 use crate::money::Money;
 
 pub fn decimal_extract(obj: Bound<PyAny>) -> PyResult<Decimal> {
-    if let Ok(_) = obj.extract::<Money>() {
+    if obj.extract::<Money>().is_ok() {
         Err(PyValueError::new_err("Invalid decimal"))
     } else if let Ok(mut amount) = obj.extract::<Decimal>() {
         if obj.to_string().trim_start().starts_with("-") {

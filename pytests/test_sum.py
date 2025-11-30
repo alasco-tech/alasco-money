@@ -1,5 +1,6 @@
-import alasco_money as _money
 import pytest as _pytest
+
+import alasco_money as _money
 
 
 @_pytest.mark.parametrize(

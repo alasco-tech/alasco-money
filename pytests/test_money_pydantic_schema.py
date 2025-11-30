@@ -1,5 +1,6 @@
-import alasco_money as _money
 import pydantic as _pydantic
+
+import alasco_money as _money
 
 
 def test_money_schema():

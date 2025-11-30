@@ -83,7 +83,7 @@ impl MoneyWithVAT {
             }
         }
 
-        return tax_rate;
+        tax_rate
     }
 
     #[getter(is_positive)]
@@ -118,7 +118,7 @@ impl MoneyWithVAT {
     ///     (d) Ratios formed from rounded amounts no longer add to 100%
     fn rounded_to_cents(&self) -> Self {
         let rounded_net = self.net.round(Some(2)).amount;
-        return Self {
+        Self {
             net: Money {
                 amount: rounded_net,
             },
@@ -128,7 +128,7 @@ impl MoneyWithVAT {
                     decimal_neg(rounded_net),
                 ),
             },
-        };
+        }
     }
 
     /// When storing Money, values are implicitly rounded to the field precision,
@@ -352,26 +352,24 @@ impl MoneyWithVAT {
         let items = if args.len() == 1 {
             PyIterator::from_object(&args.get_item(0).unwrap()).unwrap()
         } else {
-            PyIterator::from_object(&args).unwrap()
+            PyIterator::from_object(args).unwrap()
         };
 
         let mut max_net: Option<Decimal> = None;
         let mut max_gross: Option<Decimal> = None;
 
-        for item in items {
-            if let Ok(raw_value) = item {
-                if let Ok(value) = raw_value.extract::<MoneyWithVAT>() {
-                    max_net = Some(if let Some(true_max_net) = max_net {
-                        true_max_net.max(value.net.amount)
-                    } else {
-                        value.net.amount
-                    });
-                    max_gross = Some(if let Some(true_max_gross) = max_gross {
-                        true_max_gross.max(value.get_gross().amount)
-                    } else {
-                        value.get_gross().amount
-                    });
-                }
+        for raw_value in items.flatten() {
+            if let Ok(value) = raw_value.extract::<MoneyWithVAT>() {
+                max_net = Some(if let Some(true_max_net) = max_net {
+                    true_max_net.max(value.net.amount)
+                } else {
+                    value.net.amount
+                });
+                max_gross = Some(if let Some(true_max_gross) = max_gross {
+                    true_max_gross.max(value.get_gross().amount)
+                } else {
+                    value.get_gross().amount
+                });
             }
         }
 
@@ -514,13 +512,11 @@ impl MoneyWithVAT {
         let mut tax_sum: Decimal = Decimal::new(0, 0);
         let mut any_value: bool = false;
 
-        for elem in iterator {
-            if let Ok(item) = elem {
-                if let Ok(Some(value)) = item.extract::<Option<Self>>() {
-                    net_sum = decimal_add(net_sum, value.net.amount);
-                    tax_sum = decimal_add(tax_sum, value.tax.amount);
-                    any_value = true;
-                }
+        for item in iterator.flatten() {
+            if let Ok(Some(value)) = item.extract::<Option<Self>>() {
+                net_sum = decimal_add(net_sum, value.net.amount);
+                tax_sum = decimal_add(tax_sum, value.tax.amount);
+                any_value = true;
             }
         }
 

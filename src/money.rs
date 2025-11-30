@@ -40,7 +40,7 @@ impl Money {
     #[pyo3(signature = (n=None))]
     pub fn round(&self, n: Option<i32>) -> Self {
         Self {
-            amount: decimal_round(self.amount, if let Some(true_n) = n { true_n } else { 0 }),
+            amount: decimal_round(self.amount, n.unwrap_or_default()),
         }
     }
 
@@ -136,7 +136,7 @@ impl Money {
                 } else {
                     let decimal_result = decimal_div(self.amount, other_money.amount);
                     let py_obj = PyObject::from(decimal_result.into_pyobject(py)?);
-                    return Ok(py_obj);
+                    Ok(py_obj)
                 }
             } else if let Ok(other_decimal) = decimal_extract(other) {
                 if other_decimal == Decimal::new(0, 0) {
@@ -148,7 +148,7 @@ impl Money {
                         amount: decimal_div(self.amount, other_decimal),
                     };
                     let py_obj = PyObject::from(money_result.into_pyobject(py)?);
-                    return Ok(py_obj);
+                    Ok(py_obj)
                 }
             } else {
                 Err(pyo3::exceptions::PyTypeError::new_err(
@@ -169,13 +169,13 @@ impl Money {
             if let Ok(other_money) = other.extract::<Self>() {
                 let decimal_result = decimal_div(other_money.amount, self.amount);
                 let py_obj = PyObject::from(decimal_result.into_pyobject(py)?);
-                return Ok(py_obj);
+                Ok(py_obj)
             } else if let Ok(other_decimal) = decimal_extract(other) {
                 let money_result = Self {
                     amount: decimal_div(other_decimal, self.amount),
                 };
                 let py_obj = PyObject::from(money_result.into_pyobject(py)?);
-                return Ok(py_obj);
+                Ok(py_obj)
             } else {
                 Err(pyo3::exceptions::PyTypeError::new_err(
                     "Unsupported operand",
@@ -202,11 +202,11 @@ impl Money {
     }
 
     pub fn for_json(&self) -> String {
-        return format!(
+        format!(
             "{number:.prec$}",
             number = self.round(MONEY_PRECISION).amount,
             prec = MONEY_PRECISION.unwrap() as usize
-        );
+        )
     }
 
     #[staticmethod]
@@ -300,11 +300,9 @@ pub fn sum_(elems: Bound<PyAny>) -> PyResult<Money> {
     let iterator = PyIterator::from_object(&elems)?;
     let mut amount: Decimal = Decimal::new(0, 0);
 
-    for elem in iterator {
-        if let Ok(item) = elem {
-            if let Ok(Some(value)) = item.extract::<Option<Money>>() {
-                amount = decimal_add(amount, value.amount);
-            }
+    for item in iterator.flatten() {
+        if let Ok(Some(value)) = item.extract::<Option<Money>>() {
+            amount = decimal_add(amount, value.amount);
         }
     }
 

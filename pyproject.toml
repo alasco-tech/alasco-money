@@ -13,7 +13,6 @@ dev = [
     "maturin",
     "pytest",
     "pydantic>=2.10.6",
-    "pip>=25.0.1",
 ]
 
 [tool.maturin]

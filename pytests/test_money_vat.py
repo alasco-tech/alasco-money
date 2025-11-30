@@ -1,7 +1,8 @@
 import decimal as _decimal
 
-import alasco_money as _money
 import pytest as _pytest
+
+import alasco_money as _money
 
 
 @_pytest.mark.parametrize(
@@ -57,6 +58,7 @@ def test_eq(one, other, expected_equal):
 )
 def test_ne(one, other, expected_unequal):
     assert (one != other) is expected_unequal
+
 
 @_pytest.mark.parametrize(
     "subject, expected",
@@ -368,12 +370,8 @@ def test_is_equal_up_to_cents(params):
 
 def test_not_is_equal_up_to_cents():
     assert not _money.MoneyWithVAT(0).is_equal_up_to_cents(_money.MoneyWithVAT("0.01"))
-    assert not _money.MoneyWithVAT("1.006").is_equal_up_to_cents(
-        _money.MoneyWithVAT("1.004")
-    )
-    assert not _money.MoneyWithVAT("-1.006").is_equal_up_to_cents(
-        _money.MoneyWithVAT("-1.004")
-    )
+    assert not _money.MoneyWithVAT("1.006").is_equal_up_to_cents(_money.MoneyWithVAT("1.004"))
+    assert not _money.MoneyWithVAT("-1.006").is_equal_up_to_cents(_money.MoneyWithVAT("-1.004"))
 
 
 @_pytest.mark.parametrize(
@@ -393,9 +391,7 @@ def test_is_lower_or_equal_up_to_cents(params):
 
 
 def test_not_is_lower_or_equal_up_to_cents():
-    assert not _money.MoneyWithVAT(0).is_lower_or_equal_up_to_cents(
-        _money.MoneyWithVAT("-0.01")
-    )
+    assert not _money.MoneyWithVAT(0).is_lower_or_equal_up_to_cents(_money.MoneyWithVAT("-0.01"))
     assert not _money.MoneyWithVAT("1.006").is_lower_or_equal_up_to_cents(
         _money.MoneyWithVAT("1.004")
     )
@@ -415,12 +411,8 @@ def test_is_lower_up_to_cents(params):
 
 
 def test_not_is_lower_up_to_cents():
-    assert not _money.MoneyWithVAT(0).is_lower_up_to_cents(
-        _money.MoneyWithVAT("-0.001")
-    )
-    assert not _money.MoneyWithVAT("0.999").is_lower_up_to_cents(
-        _money.MoneyWithVAT("1.004")
-    )
+    assert not _money.MoneyWithVAT(0).is_lower_up_to_cents(_money.MoneyWithVAT("-0.001"))
+    assert not _money.MoneyWithVAT("0.999").is_lower_up_to_cents(_money.MoneyWithVAT("1.004"))
 
 
 @_pytest.mark.parametrize(
@@ -605,8 +597,5 @@ def test_rounded_to_cents(net, tax, expected_net, expected_tax):
     assert value.rounded_to_cents().tax == expected_tax
     assert value.rounded_to_cents().gross == expected_net + expected_tax
 
-    assert (
-        value.gross.round(2)
-        == value.rounded_to_cents().net + value.rounded_to_cents().tax
-    )
+    assert value.gross.round(2) == value.rounded_to_cents().net + value.rounded_to_cents().tax
     assert value.gross.round(2) == value.rounded_to_cents().gross

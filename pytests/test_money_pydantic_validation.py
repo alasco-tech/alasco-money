@@ -1,6 +1,7 @@
-import alasco_money as _money
 import pydantic as _pydantic
 import pytest as _pytest
+
+import alasco_money as _money
 
 
 def test_have_validators():
@@ -30,9 +31,7 @@ def test_money_validator_fail(data):
 
 
 def test_money_vat_validator_ok():
-    result = _pydantic.TypeAdapter(_money.MoneyWithVAT).validate_python(
-        {"net": 100, "tax": 19}
-    )
+    result = _pydantic.TypeAdapter(_money.MoneyWithVAT).validate_python({"net": 100, "tax": 19})
     assert result.net == _money.Money(100)
     assert result.tax == _money.Money(19)
 

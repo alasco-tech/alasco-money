@@ -4,6 +4,7 @@
 from decimal import Decimal
 
 import pytest
+
 from alasco_money import Money
 
 
@@ -55,9 +56,7 @@ def test_hash():
 
 
 def test_add():
-    assert Money(Decimal("1000000")) + Money(Decimal("1000000")) == Money(
-        amount="2000000"
-    )
+    assert Money(Decimal("1000000")) + Money(Decimal("1000000")) == Money(amount="2000000")
 
 
 def test_add_non_money():
@@ -99,13 +98,13 @@ def test_div():
     assert x / y == Decimal(25)
 
 
-def test_div_by_non_Money():
+def test_div_by_non_money():
     x = Money(50)
     y = 2
     assert x / y == Money(25)
 
 
-def test_rdiv_by_non_Money():
+def test_rdiv_by_non_money():
     x = 50
     y = Money(2)
     assert x / y == Money(25)
