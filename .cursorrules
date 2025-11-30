@@ -1,0 +1,7 @@
+# Rules for AI agents interacting with this codebase
+
+- Use mise tasks when possible
+- Do not add comments unless the logic is counterintuitive
+- Preserve existing comments
+- Do not add docstrings unless explicitly required
+- Preserve existing docstrings
