@@ -15,10 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python:
-          - "3.12"
-          - "3.13"
-          - "3.14"
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
@@ -33,7 +30,7 @@ jobs:
       matrix:
         platform: [linux, darwin]
         target: [x86_64, aarch64]
-        interpreter: ["3.12 3.13 3.14"]
+        interpreter: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         include:
           - platform: linux
             runner: ubuntu-latest
