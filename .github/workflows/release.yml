@@ -47,8 +47,6 @@ jobs:
           path: dist
           pattern: dist-*
           merge-multiple: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: build.yml
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
